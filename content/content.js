@@ -129,7 +129,7 @@ const ZMPMain = {
       const width = config.uiEnhance.contentWidth || 1000;
       document.body.style.setProperty('--zmp-content-width', width + 'px');
       // 主题切换
-      const themes = ['default', 'soft', 'academic', 'modern', 'darkzen'];
+      const themes = ['default', 'weread', 'jianshu', 'medium', 'eyegreen', 'parchment', 'academic', 'modern', 'darkzen', 'oled'];
       themes.forEach(t => document.body.classList.remove('zmp-theme-' + t));
       const theme = config.uiEnhance.theme || 'default';
       document.body.classList.add('zmp-theme-' + theme);
