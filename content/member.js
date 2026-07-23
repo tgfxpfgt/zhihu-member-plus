@@ -259,6 +259,8 @@ const ZMPMember = {
         } else if (hasPaidMark || text.includes('付费专栏') || text.includes('¥')) {
           labelType = 'paid';
           labelText = '付费';
+        } else {
+          return; // 免费内容不添加标签，避免干扰阅读
         }
 
         const label = document.createElement('span');

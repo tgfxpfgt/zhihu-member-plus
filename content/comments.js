@@ -148,7 +148,8 @@ const ZMPComments = {
    * 为回答添加快捷操作栏
    */
   addAnswerToolbars() {
-    const answers = document.querySelectorAll('.AnswerItem, .List-item [class*="ContentItem"]');
+    // 仅匹配顶层回答容器，避免嵌套匹配导致重复
+    const answers = document.querySelectorAll('.AnswerItem, .List-item > .ContentItem');
     answers.forEach(answer => {
       if (answer.querySelector('.zmp-answer-toolbar')) return;
 

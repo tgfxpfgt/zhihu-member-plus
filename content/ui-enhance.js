@@ -211,7 +211,7 @@ const ZMPUIEnhance = {
         <button class="zmp-jump-end-btn" data-idx="${idx}">⬇ 跳转尾部</button>
       `;
 
-      answer.parentNode.insertBefore(bar, answer.nextSibling);
+      answer.parentNode.insertBefore(bar, answer);
     });
 
     // 绑定跳转事件

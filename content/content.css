@@ -120,10 +120,11 @@ body.zmp-hide-upgrade .Modal-wrapper [class*="paywall"] {
 }
 
 /* ========== 无干扰阅读 ========== */
-body.zmp-no-disturb .ContentItem-actions,
 body.zmp-no-disturb .ContentItem-footerButton,
 body.zmp-no-disturb .ShareMenu,
-body.zmp-no-disturb .HoverCard {
+body.zmp-no-disturb .HoverCard,
+body.zmp-no-disturb .ContentItem-actions button[class*="Share"],
+body.zmp-no-disturb .ContentItem-actions button[class*="like"] {
   display: none !important;
 }
 
