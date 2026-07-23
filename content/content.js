@@ -25,6 +25,12 @@ const ZMPMain = {
       await ZMPFilter.init(this.config);
       await ZMPPerformance.init(this.config);
       await ZMPTools.init(this.config);
+      await ZMPUIEnhance.init(this.config);
+
+      // 宽屏适配
+      if (this.config.uiEnhance && this.config.uiEnhance.widescreen) {
+        document.body.classList.add('zmp-widescreen');
+      }
 
       // 监听配置实时变更
       this.listenConfigChanges();
@@ -113,6 +119,12 @@ const ZMPMain = {
       ZMPPerformance.config = config.performance;
       document.body.classList.toggle('zmp-no-animations', config.performance.disableAnimations);
       document.body.classList.toggle('zmp-thumbnail', config.performance.thumbnailMode);
+    }
+
+    // UI增强设置
+    if (config.uiEnhance) {
+      ZMPUIEnhance.config = config.uiEnhance;
+      document.body.classList.toggle('zmp-widescreen', config.uiEnhance.widescreen);
     }
   },
 

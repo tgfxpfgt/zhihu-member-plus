@@ -162,6 +162,13 @@ function loadSettings(config) {
   setChecked('thumbnailMode', config.performance.thumbnailMode);
   setValue('throttleDelay', config.performance.throttleDelay);
   document.getElementById('throttleDelayVal').textContent = Math.round(config.performance.throttleDelay / 60);
+
+  // UI增强
+  const ui = config.uiEnhance || {};
+  setChecked('widescreen', ui.widescreen);
+  setChecked('floatingButton', ui.floatingButton);
+  setChecked('debugPanel', ui.debugPanel);
+  setChecked('wordCount', ui.wordCount);
 }
 
 /**
@@ -243,6 +250,7 @@ async function saveCheckboxSetting(cb) {
   const perfKeys = ['throttleIdle', 'lazyLoadImages', 'disableAutoplay', 'disablePrefetch',
     'cleanDOM', 'disableAnimations', 'thumbnailMode'];
   const toolKeys = ['readingProgress', 'tocEnabled'];
+  const uiKeys = ['widescreen', 'floatingButton', 'debugPanel', 'wordCount'];
 
   let section = '';
   if (memberKeys.includes(id)) section = 'member';
@@ -250,6 +258,7 @@ async function saveCheckboxSetting(cb) {
   else if (purifyKeys.includes(id)) section = 'purify';
   else if (perfKeys.includes(id)) section = 'performance';
   else if (toolKeys.includes(id)) section = 'tools';
+  else if (uiKeys.includes(id)) section = 'uiEnhance';
 
   if (section) {
     await ZMPStorage.updateNested(section, id, checked);

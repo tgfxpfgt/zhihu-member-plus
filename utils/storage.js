@@ -60,6 +60,13 @@ const ZMPStorage = {
       tocEnabled: true,
       localTags: {}
     },
+    // UI增强
+    uiEnhance: {
+      widescreen: true,
+      floatingButton: true,
+      debugPanel: false,
+      wordCount: true
+    },
     // 阅读进度
     progress: {},
     // 会员状态缓存
