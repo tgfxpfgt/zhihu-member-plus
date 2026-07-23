@@ -125,6 +125,14 @@ const ZMPMain = {
     if (config.uiEnhance) {
       ZMPUIEnhance.config = config.uiEnhance;
       document.body.classList.toggle('zmp-widescreen', config.uiEnhance.widescreen);
+      // 自定义宽度
+      const width = config.uiEnhance.contentWidth || 1000;
+      document.body.style.setProperty('--zmp-content-width', width + 'px');
+      // 主题切换
+      const themes = ['default', 'soft', 'academic', 'modern', 'darkzen'];
+      themes.forEach(t => document.body.classList.remove('zmp-theme-' + t));
+      const theme = config.uiEnhance.theme || 'default';
+      document.body.classList.add('zmp-theme-' + theme);
     }
   },
 

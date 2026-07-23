@@ -381,7 +381,7 @@ body.zmp-hide-popups [class*="Modal-wrapper"] {
   display: none !important;
 }
 
-/* ========== 宽屏适配 ========== */
+/* ========== 宽屏适配 + 自定义宽度 ========== */
 body.zmp-widescreen .ContentItem-content,
 body.zmp-widescreen .Post-Main,
 body.zmp-widescreen .Card,
@@ -391,7 +391,7 @@ body.zmp-widescreen .List-item {
 body.zmp-widescreen .Topstory-mainColumn,
 body.zmp-widescreen .Post-Main,
 body.zmp-widescreen .Question-mainColumn {
-  max-width: 1200px !important;
+  max-width: var(--zmp-content-width, 1000px) !important;
   width: 100% !important;
 }
 body.zmp-widescreen .Topstory-mainColumn .Card,
@@ -400,8 +400,104 @@ body.zmp-widescreen .Question-mainColumn .Card {
 }
 body.zmp-widescreen .RichContent-inner,
 body.zmp-widescreen .Post-RichTextContainer {
-  max-width: 900px !important;
+  max-width: calc(var(--zmp-content-width, 1000px) - 100px) !important;
   margin: 0 auto !important;
+}
+
+/* ========== 5套美化主题 ========== */
+/* 主题1: 默认清爽 */
+body.zmp-theme-default .RichText,
+body.zmp-theme-default .Post-RichTextContainer {
+  color: #1a1a1a;
+  letter-spacing: 0.3px;
+}
+
+/* 主题2: 柔和护眼 */
+body.zmp-theme-soft {
+  --zmp-theme-bg: #fdf6e3;
+  --zmp-theme-text: #4a4a4a;
+}
+body.zmp-theme-soft .Card,
+body.zmp-theme-soft .Topstory-mainColumn,
+body.zmp-theme-soft .Question-mainColumn {
+  background-color: #fdf6e3 !important;
+}
+body.zmp-theme-soft .RichText,
+body.zmp-theme-soft .Post-RichTextContainer,
+body.zmp-theme-soft .ContentItem-title {
+  color: #4a4a4a !important;
+  letter-spacing: 0.5px;
+  line-height: 2.0 !important;
+}
+body.zmp-theme-soft .RichText p {
+  margin-bottom: 1.2em !important;
+}
+
+/* 主题3: 学术专注 */
+body.zmp-theme-academic .RichText,
+body.zmp-theme-academic .Post-RichTextContainer {
+  font-family: 'Georgia', 'Noto Serif SC', 'Source Han Serif SC', serif !important;
+  color: #2c2c2c !important;
+  line-height: 2.1 !important;
+  letter-spacing: 0.8px;
+  text-align: justify;
+}
+body.zmp-theme-academic .RichText p {
+  text-indent: 2em;
+  margin-bottom: 1.4em !important;
+}
+body.zmp-theme-academic .ContentItem-title {
+  font-family: 'Georgia', 'Noto Serif SC', serif !important;
+}
+
+/* 主题4: 现代简约 */
+body.zmp-theme-modern .RichText,
+body.zmp-theme-modern .Post-RichTextContainer {
+  font-family: 'SF Pro Text', 'Helvetica Neue', 'PingFang SC', sans-serif !important;
+  color: #333 !important;
+  line-height: 1.9 !important;
+  letter-spacing: 0.4px;
+  font-weight: 400;
+}
+body.zmp-theme-modern .ContentItem-title {
+  font-weight: 600 !important;
+  letter-spacing: -0.2px;
+}
+body.zmp-theme-modern .Card {
+  border-radius: 12px !important;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important;
+  border: none !important;
+}
+
+/* 主题5: 深色沉浸 */
+body.zmp-theme-darkzen {
+  background: #0d1117 !important;
+}
+body.zmp-theme-darkzen .Card,
+body.zmp-theme-darkzen .Topstory-mainColumn,
+body.zmp-theme-darkzen .Question-mainColumn,
+body.zmp-theme-darkzen .ContentItem {
+  background: #161b22 !important;
+  border-color: #30363d !important;
+}
+body.zmp-theme-darkzen .RichText,
+body.zmp-theme-darkzen .Post-RichTextContainer,
+body.zmp-theme-darkzen .ContentItem-title,
+body.zmp-theme-darkzen .QuestionHeader-title {
+  color: #e6edf3 !important;
+  letter-spacing: 0.3px;
+  line-height: 1.95 !important;
+}
+body.zmp-theme-darkzen a {
+  color: #58a6ff !important;
+}
+body.zmp-theme-darkzen .RichText img {
+  border-radius: 8px;
+  opacity: 0.92;
+}
+body.zmp-theme-darkzen .AppHeader {
+  background: #161b22 !important;
+  border-color: #30363d !important;
 }
 
 /* ========== 悬浮按钮 ========== */

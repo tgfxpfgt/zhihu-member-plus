@@ -166,6 +166,9 @@ function loadSettings(config) {
   // UI增强
   const ui = config.uiEnhance || {};
   setChecked('widescreen', ui.widescreen);
+  setValue('contentWidth', ui.contentWidth || 1000);
+  document.getElementById('contentWidthVal').textContent = ui.contentWidth || 1000;
+  setValue('theme', ui.theme || 'default');
   setChecked('floatingButton', ui.floatingButton);
   setChecked('debugPanel', ui.debugPanel);
   setChecked('wordCount', ui.wordCount);
@@ -222,6 +225,23 @@ function bindEvents() {
     const val = parseInt(e.target.value);
     document.getElementById('throttleDelayVal').textContent = Math.round(val / 60);
     saveThrottleDelay(val);
+  });
+
+  // 内容宽度（防抖保存）
+  const saveWidth = debounce(async (val) => {
+    await ZMPStorage.updateNested('uiEnhance', 'contentWidth', val);
+    sendToTab({ action: 'refreshModules' });
+  }, 300);
+  document.getElementById('contentWidth').addEventListener('input', (e) => {
+    const val = parseInt(e.target.value);
+    document.getElementById('contentWidthVal').textContent = val;
+    saveWidth(val);
+  });
+
+  // 美化主题
+  document.getElementById('theme').addEventListener('change', async (e) => {
+    await ZMPStorage.updateNested('uiEnhance', 'theme', e.target.value);
+    sendToTab({ action: 'refreshModules' });
   });
 
   // 保存黑名单

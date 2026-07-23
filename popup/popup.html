@@ -251,6 +251,20 @@
           <span>宽屏适配（减少左右空白）</span>
           <input type="checkbox" id="widescreen" checked>
         </label>
+        <div class="setting-row">
+          <span>内容宽度：<em id="contentWidthVal">1000</em>px</span>
+          <input type="range" id="contentWidth" min="600" max="1600" step="50" value="1000">
+        </div>
+        <div class="setting-row">
+          <span>美化主题</span>
+          <select id="theme">
+            <option value="default">默认清爽</option>
+            <option value="soft">柔和护眼</option>
+            <option value="academic">学术专注</option>
+            <option value="modern">现代简约</option>
+            <option value="darkzen">深色沉浸</option>
+          </select>
+        </div>
         <label class="setting-item">
           <span>悬浮快捷按钮</span>
           <input type="checkbox" id="floatingButton" checked>

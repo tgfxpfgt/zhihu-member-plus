@@ -63,6 +63,8 @@ const ZMPStorage = {
     // UI增强
     uiEnhance: {
       widescreen: true,
+      contentWidth: 1000,
+      theme: 'default',
       floatingButton: true,
       debugPanel: false,
       wordCount: true
