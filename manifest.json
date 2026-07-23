@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "知乎盐选会员增强助手",
+  "version": "1.0.0",
+  "description": "知乎盐选/盐智会员专属阅读增强、页面净化、性能优化工具（仅服务已购会员账号）",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "downloads"
+  ],
+  "host_permissions": [
+    "https://www.zhihu.com/*",
+    "https://zhuanlan.zhihu.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.zhihu.com/*",
+        "https://zhuanlan.zhihu.com/*"
+      ],
+      "js": [
+        "utils/storage.js",
+        "content/member.js",
+        "content/reader.js",
+        "content/purify.js",
+        "content/comments.js",
+        "content/filter.js",
+        "content/performance.js",
+        "content/tools.js",
+        "content/content.js"
+      ],
+      "css": [
+        "content/content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

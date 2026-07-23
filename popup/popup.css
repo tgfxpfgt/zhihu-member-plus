@@ -1,0 +1,304 @@
+/* 知乎盐选会员增强助手 - Popup弹窗样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 400px;
+  max-height: 580px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  font-size: 13px;
+  color: #333;
+  background: #fafbfc;
+  overflow-y: auto;
+}
+
+.popup-container {
+  padding: 12px 16px;
+}
+
+/* 头部 */
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.popup-header h1 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.version {
+  font-size: 11px;
+  color: #999;
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* 会员状态 */
+.member-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 10px 0;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #666;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ccc;
+}
+
+.status-dot.active {
+  background: #52c41a;
+}
+
+.status-dot.inactive {
+  background: #faad14;
+}
+
+/* 快捷操作 */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.action-btn {
+  padding: 6px 4px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: #e8f4ff;
+  border-color: #91caff;
+}
+
+.action-btn.active {
+  background: #e6f7ff;
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+/* 标签导航 */
+.tab-nav {
+  display: flex;
+  border-bottom: 2px solid #e8e8e8;
+  margin-bottom: 12px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 8px 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: #666;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: #1890ff;
+}
+
+.tab-btn.active {
+  color: #1890ff;
+  border-bottom-color: #1890ff;
+  font-weight: 500;
+}
+
+/* 面板 */
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+/* 设置组 */
+.setting-group {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.setting-group:last-child {
+  border-bottom: none;
+}
+
+.setting-group h3 {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+/* 设置项 */
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  cursor: pointer;
+}
+
+.setting-item span {
+  font-size: 12px;
+  color: #444;
+}
+
+.setting-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #1890ff;
+  cursor: pointer;
+}
+
+/* 滑块行 */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  gap: 10px;
+}
+
+.setting-row span {
+  font-size: 12px;
+  color: #444;
+  white-space: nowrap;
+}
+
+.setting-row em {
+  font-style: normal;
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.setting-row input[type="range"] {
+  flex: 1;
+  max-width: 140px;
+  height: 4px;
+  accent-color: #1890ff;
+}
+
+.setting-row select {
+  padding: 3px 8px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 12px;
+  background: #fff;
+}
+
+/* 链接按钮 */
+.link-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.link-btn {
+  padding: 6px 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  color: #555;
+  transition: all 0.2s;
+}
+
+.link-btn:hover {
+  background: #f0f7ff;
+  border-color: #91caff;
+  color: #1890ff;
+}
+
+/* 文本域 */
+textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 12px;
+  resize: vertical;
+  font-family: inherit;
+  margin-bottom: 8px;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #1890ff;
+}
+
+/* 按钮行 */
+.btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.small-btn {
+  padding: 5px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  color: #555;
+  transition: all 0.2s;
+}
+
+.small-btn:hover {
+  background: #f0f7ff;
+  border-color: #91caff;
+  color: #1890ff;
+}
+
+/* 底部 */
+.popup-footer {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #e8e8e8;
+  text-align: center;
+  font-size: 10px;
+  color: #bbb;
+}
+
+/* 滚动条美化 */
+body::-webkit-scrollbar {
+  width: 5px;
+}
+
+body::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+body::-webkit-scrollbar-track {
+  background: transparent;
+}

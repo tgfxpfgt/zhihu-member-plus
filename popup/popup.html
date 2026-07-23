@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>知乎盐选会员增强助手</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- 头部 -->
+    <header class="popup-header">
+      <h1>知乎盐选会员增强</h1>
+      <span class="version">v1.0</span>
+    </header>
+
+    <!-- 会员状态栏 -->
+    <div class="member-status" id="memberStatus">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">检测会员状态中...</span>
+    </div>
+
+    <!-- 快捷操作 -->
+    <div class="quick-actions">
+      <button class="action-btn" id="btnImmersive" title="沉浸式阅读">📖 沉浸</button>
+      <button class="action-btn" id="btnNight" title="夜间模式">🌙 夜间</button>
+      <button class="action-btn" id="btnExportMd" title="导出Markdown">📄 导出</button>
+      <button class="action-btn" id="btnToc" title="目录">📑 目录</button>
+    </div>
+
+    <!-- 分类标签页 -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="member">盐选会员</button>
+      <button class="tab-btn" data-tab="reader">阅读设置</button>
+      <button class="tab-btn" data-tab="purify">屏蔽净化</button>
+      <button class="tab-btn" data-tab="performance">性能节流</button>
+    </nav>
+
+    <!-- 盐选会员专属 -->
+    <section class="tab-panel active" id="panel-member">
+      <div class="setting-group">
+        <h3>会员阅读增强</h3>
+        <label class="setting-item">
+          <span>自动移除付费遮挡浮层</span>
+          <input type="checkbox" id="autoRemovePaywall" checked>
+        </label>
+        <label class="setting-item">
+          <span>高清原图阅读</span>
+          <input type="checkbox" id="hdImages" checked>
+        </label>
+        <label class="setting-item">
+          <span>关闭付费升级弹窗</span>
+          <input type="checkbox" id="hideUpgradePopup" checked>
+        </label>
+        <label class="setting-item">
+          <span>无干扰阅读模式</span>
+          <input type="checkbox" id="noDisturbReading" checked>
+        </label>
+        <label class="setting-item">
+          <span>专栏全屏阅读</span>
+          <input type="checkbox" id="fullscreenReading">
+        </label>
+        <label class="setting-item">
+          <span>隐藏试读截断线</span>
+          <input type="checkbox" id="hideTrialCutoff" checked>
+        </label>
+      </div>
+      <div class="setting-group">
+        <h3>页面优化</h3>
+        <label class="setting-item">
+          <span>隐藏全站会员推广横幅</span>
+          <input type="checkbox" id="hideMemberBanner" checked>
+        </label>
+        <label class="setting-item">
+          <span>内容类型标签（免费/盐选/付费）</span>
+          <input type="checkbox" id="contentLabels" checked>
+        </label>
+      </div>
+      <div class="setting-group">
+        <h3>会员快捷入口</h3>
+        <div class="link-buttons">
+          <button class="link-btn" data-url="https://www.zhihu.com/special">盐选频道</button>
+          <button class="link-btn" data-url="https://www.zhihu.com/ebook">免费书库</button>
+          <button class="link-btn" data-url="https://www.zhihu.com/lives">讲书专区</button>
+          <button class="link-btn" data-url="https://www.zhihu.com/member">会员中心</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 阅读设置 -->
+    <section class="tab-panel" id="panel-reader">
+      <div class="setting-group">
+        <h3>阅读样式</h3>
+        <div class="setting-row">
+          <span>字体</span>
+          <select id="fontFamily">
+            <option value="system">系统默认</option>
+            <option value="serif">衬线体</option>
+            <option value="sans">无衬线</option>
+            <option value="mono">等宽体</option>
+            <option value="kaiti">楷体</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <span>字号：<em id="fontSizeVal">16</em>px</span>
+          <input type="range" id="fontSize" min="12" max="24" value="16">
+        </div>
+        <div class="setting-row">
+          <span>行距：<em id="lineHeightVal">1.8</em></span>
+          <input type="range" id="lineHeight" min="1.2" max="3.0" step="0.1" value="1.8">
+        </div>
+        <div class="setting-row">
+          <span>背景色</span>
+          <select id="bgColor">
+            <option value="white">白纸</option>
+            <option value="green">护眼绿</option>
+            <option value="dark">深色</option>
+          </select>
+        </div>
+      </div>
+      <div class="setting-group">
+        <h3>阅读模式</h3>
+        <label class="setting-item">
+          <span>沉浸式阅读（隐藏侧边栏）</span>
+          <input type="checkbox" id="immersiveMode">
+        </label>
+        <label class="setting-item">
+          <span>夜间模式</span>
+          <input type="checkbox" id="nightMode">
+        </label>
+        <label class="setting-item">
+          <span>长文分页（替代无尽滚动）</span>
+          <input type="checkbox" id="pagination">
+        </label>
+      </div>
+      <div class="setting-group">
+        <h3>效率工具</h3>
+        <label class="setting-item">
+          <span>阅读进度记忆</span>
+          <input type="checkbox" id="readingProgress" checked>
+        </label>
+        <label class="setting-item">
+          <span>自动生成文章目录</span>
+          <input type="checkbox" id="tocEnabled" checked>
+        </label>
+      </div>
+    </section>
+
+    <!-- 屏蔽净化 -->
+    <section class="tab-panel" id="panel-purify">
+      <div class="setting-group">
+        <h3>页面净化</h3>
+        <label class="setting-item">
+          <span>隐藏广告推广</span>
+          <input type="checkbox" id="hideAds" checked>
+        </label>
+        <label class="setting-item">
+          <span>隐藏直播推送</span>
+          <input type="checkbox" id="hideLiveStream" checked>
+        </label>
+        <label class="setting-item">
+          <span>隐藏课程/电子书广告</span>
+          <input type="checkbox" id="hideCourseAds" checked>
+        </label>
+        <label class="setting-item">
+          <span>隐藏带货商品卡片</span>
+          <input type="checkbox" id="hideGoodsCards" checked>
+        </label>
+        <label class="setting-item">
+          <span>隐藏付费咨询卡片</span>
+          <input type="checkbox" id="hideConsultCards" checked>
+        </label>
+        <label class="setting-item">
+          <span>拦截付费/推销弹窗</span>
+          <input type="checkbox" id="hideMemberPromo" checked>
+        </label>
+      </div>
+      <div class="setting-group">
+        <h3>评论区优化</h3>
+        <label class="setting-item">
+          <span>折叠低质短评</span>
+          <input type="checkbox" id="foldShortComments" checked>
+        </label>
+        <label class="setting-item">
+          <span>折叠广告评论</span>
+          <input type="checkbox" id="foldAdComments" checked>
+        </label>
+        <label class="setting-item">
+          <span>搜索结果过滤软文</span>
+          <input type="checkbox" id="searchFilter" checked>
+        </label>
+      </div>
+      <div class="setting-group">
+        <h3>关键词黑名单</h3>
+        <textarea id="blockKeywords" rows="3" placeholder="每行一个关键词，如：&#10;广告&#10;推广&#10;优惠"></textarea>
+        <h3>作者黑名单</h3>
+        <textarea id="blockAuthors" rows="3" placeholder="每行一个作者名"></textarea>
+        <div class="btn-row">
+          <button class="small-btn" id="btnSaveBlocklist">保存黑名单</button>
+          <button class="small-btn" id="btnExportConfig">导出配置</button>
+          <button class="small-btn" id="btnImportConfig">导入配置</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 性能节流 -->
+    <section class="tab-panel" id="panel-performance">
+      <div class="setting-group">
+        <h3>资源节流</h3>
+        <label class="setting-item">
+          <span>闲置标签页自动节流</span>
+          <input type="checkbox" id="throttleIdle" checked>
+        </label>
+        <label class="setting-item">
+          <span>图片智能懒加载</span>
+          <input type="checkbox" id="lazyLoadImages" checked>
+        </label>
+        <label class="setting-item">
+          <span>禁用视频自动播放</span>
+          <input type="checkbox" id="disableAutoplay" checked>
+        </label>
+        <label class="setting-item">
+          <span>关闭页面预加载</span>
+          <input type="checkbox" id="disablePrefetch" checked>
+        </label>
+        <label class="setting-item">
+          <span>定时清理闲置DOM</span>
+          <input type="checkbox" id="cleanDOM" checked>
+        </label>
+      </div>
+      <div class="setting-group">
+        <h3>渲染优化</h3>
+        <label class="setting-item">
+          <span>禁用页面动画效果</span>
+          <input type="checkbox" id="disableAnimations">
+        </label>
+        <label class="setting-item">
+          <span>大图缩略图模式（点击加载原图）</span>
+          <input type="checkbox" id="thumbnailMode">
+        </label>
+      </div>
+      <div class="setting-group">
+        <h3>节流延迟</h3>
+        <div class="setting-row">
+          <span>闲置 <em id="throttleDelayVal">2</em> 分钟后节流</span>
+          <input type="range" id="throttleDelay" min="30" max="300" step="30" value="120">
+        </div>
+      </div>
+    </section>
+
+    <!-- 底部 -->
+    <footer class="popup-footer">
+      <span>仅对已登录会员账号生效 | 纯本地运行</span>
+    </footer>
+  </div>
+
+  <script src="../utils/storage.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

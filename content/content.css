@@ -1,0 +1,381 @@
+/**
+ * 知乎盐选会员增强助手 - 注入页面样式
+ */
+
+/* ========== 沉浸式阅读模式 ========== */
+body.zmp-immersive .GlobalSideBar,
+body.zmp-immersive .CornerButtons,
+body.zmp-immersive .OpenInAppButton,
+body.zmp-immersive .AppHeader,
+body.zmp-immersive .AdblockBanner,
+body.zmp-immersive .Pc-card,
+body.zmp-immersive .RelatedReadings,
+body.zmp-immersive .Recommendations-Main,
+body.zmp-immersive .Question-sideColumn,
+body.zmp-immersive .ContentItem-rightButton,
+body.zmp-immersive .ContentItem-arrowIcon,
+body.zmp-immersive .Card[data-za-detail-view-path-module*="Sticky"],
+body.zmp-immersive .QuestionHeader-side,
+body.zmp-immersive .LiveWrapper,
+body.zmp-immersive .GoodsCard,
+body.zmp-immersive .MCNLinkCard {
+  display: none !important;
+}
+
+body.zmp-immersive .ContentItem-content,
+body.zmp-immersive .RichContent-inner {
+  max-width: 100% !important;
+}
+
+/* ========== 全屏阅读模式 ========== */
+body.zmp-fullscreen-reading .Post-Main,
+body.zmp-fullscreen-reading .ContentItem-content {
+  max-width: 960px !important;
+  margin: 0 auto !important;
+  padding: 40px 20px !important;
+}
+
+body.zmp-fullscreen-reading .Post-SideActions,
+body.zmp-fullscreen-reading .ContentItem-actions {
+  display: none !important;
+}
+
+/* ========== 页面净化 - 广告/推广隐藏 ========== */
+body.zmp-hide-ads .Pc-card,
+body.zmp-hide-ads [class*="AdBelowMainColumn"],
+body.zmp-hide-ads [class*="Pc-word"],
+body.zmp-hide-ads .AdblockBanner,
+body.zmp-hide-ads [data-za-detail-view-path-module*="Ad"],
+body.zmp-hide-ads .css-1eldntr {
+  display: none !important;
+}
+
+body.zmp-hide-live [class*="Live"],
+body.zmp-hide-live .LiveWrapper,
+body.zmp-hide-live [class*="live-"] {
+  display: none !important;
+}
+
+body.zmp-hide-course [class*="Education"],
+body.zmp-hide-course [class*="course"],
+body.zmp-hide-course .EBookCard,
+body.zmp-hide-course [class*="PaidContent"] {
+  display: none !important;
+}
+
+body.zmp-hide-goods .GoodsCard,
+body.zmp-hide-goods .MCNLinkCard,
+body.zmp-hide-goods [class*="Goods-"],
+body.zmp-hide-goods .ContentItem-goodsCard {
+  display: none !important;
+}
+
+/* 隐藏会员推广横幅 */
+body.zmp-hide-member-promo [class*="MemberButton"],
+body.zmp-hide-member-promo [class*="vip-banner"],
+body.zmp-hide-member-promo [class*="salt-banner"],
+body.zmp-hide-member-promo .MembershipGuide,
+body.zmp-hide-member-promo [class*="Paywall-banner"],
+body.zmp-hide-member-promo [class*="openMember"] {
+  display: none !important;
+}
+
+/* 隐藏付费咨询卡片 */
+body.zmp-hide-consult [class*="Consult"],
+body.zmp-hide-consult [class*="consult-"] {
+  display: none !important;
+}
+
+/* ========== 付费遮挡移除（仅会员生效） ========== */
+body.zmp-member .ContentItem-expandButton,
+body.zmp-member .ContentItem-arrowIcon,
+body.zmp-member [class*="ContentItem-expand"],
+body.zmp-member .Modal-backdrop,
+body.zmp-member [class*="paywall"],
+body.zmp-member .OpenInAppButton {
+  display: none !important;
+}
+
+body.zmp-member .RichContent.is-collapsed .RichContent-inner {
+  max-height: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+
+body.zmp-member .RichContent.is-collapsed {
+  max-height: none !important;
+}
+
+/* 隐藏试读截断线 */
+body.zmp-hide-trial-cutoff [class*="ContentItem-expandButton"],
+body.zmp-hide-trial-cutoff .ContentItem-arrowIcon {
+  display: none !important;
+}
+
+/* 隐藏升级弹窗 */
+body.zmp-hide-upgrade [class*="UpgradeModal"],
+body.zmp-hide-upgrade [class*="PaywallModal"],
+body.zmp-hide-upgrade .Modal-wrapper [class*="paywall"] {
+  display: none !important;
+}
+
+/* ========== 无干扰阅读 ========== */
+body.zmp-no-disturb .ContentItem-actions,
+body.zmp-no-disturb .ContentItem-footerButton,
+body.zmp-no-disturb .ShareMenu,
+body.zmp-no-disturb .HoverCard {
+  display: none !important;
+}
+
+/* ========== 阅读样式变量 ========== */
+body.zmp-reader-styled {
+  --zmp-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --zmp-font-size: 16px;
+  --zmp-line-height: 1.8;
+  --zmp-bg-color: #ffffff;
+  --zmp-text-color: #1a1a1a;
+}
+
+body.zmp-reader-styled .RichText,
+body.zmp-reader-styled .Post-RichTextContainer,
+body.zmp-reader-styled .RichContent-inner {
+  font-family: var(--zmp-font-family) !important;
+  font-size: var(--zmp-font-size) !important;
+  line-height: var(--zmp-line-height) !important;
+}
+
+/* 背景色主题 */
+body.zmp-bg-green {
+  --zmp-bg-color: #c7edcc;
+  --zmp-text-color: #2d4a2d;
+}
+body.zmp-bg-green,
+body.zmp-bg-green .Card,
+body.zmp-bg-green .ContentItem {
+  background-color: var(--zmp-bg-color) !important;
+}
+
+body.zmp-bg-dark {
+  --zmp-bg-color: #1a1a2e;
+  --zmp-text-color: #e0e0e0;
+}
+body.zmp-bg-dark,
+body.zmp-bg-dark .Card,
+body.zmp-bg-dark .ContentItem,
+body.zmp-bg-dark .Post-Main,
+body.zmp-bg-dark .RichContent {
+  background-color: var(--zmp-bg-color) !important;
+  color: var(--zmp-text-color) !important;
+}
+body.zmp-bg-dark a {
+  color: #7cb3ff !important;
+}
+
+/* ========== 夜间模式 ========== */
+body.zmp-night-mode {
+  filter: brightness(0.85) contrast(1.05);
+  background-color: #1a1a1a !important;
+}
+body.zmp-night-mode .Card,
+body.zmp-night-mode .ContentItem,
+body.zmp-night-mode .Post-Main {
+  background-color: #2d2d2d !important;
+  color: #e0e0e0 !important;
+}
+body.zmp-night-mode img {
+  filter: brightness(0.9);
+}
+
+/* ========== 禁用动画 ========== */
+body.zmp-no-animations *,
+body.zmp-no-animations *::before,
+body.zmp-no-animations *::after {
+  animation-duration: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0s !important;
+}
+
+/* ========== 内容类型标签 ========== */
+.zmp-content-label {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  z-index: 10;
+  pointer-events: none;
+}
+.zmp-label-free {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+.zmp-label-member {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffcc80;
+}
+.zmp-label-paid {
+  background: #fce4ec;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+/* ========== 已购标记 ========== */
+.zmp-purchased-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+  z-index: 10;
+}
+
+/* ========== 目录面板 ========== */
+.zmp-toc-panel {
+  position: fixed;
+  right: 20px;
+  top: 100px;
+  width: 220px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  padding: 12px;
+  z-index: 9999;
+  font-size: 13px;
+}
+.zmp-toc-panel.zmp-toc-hidden {
+  display: none;
+}
+.zmp-toc-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 14px;
+}
+.zmp-toc-item {
+  padding: 4px 0;
+  cursor: pointer;
+  color: #555;
+  border-bottom: 1px solid #f5f5f5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.zmp-toc-item:hover {
+  color: #0066ff;
+}
+.zmp-toc-item[data-level="2"] { padding-left: 12px; }
+.zmp-toc-item[data-level="3"] { padding-left: 24px; }
+.zmp-toc-item[data-level="4"] { padding-left: 36px; }
+
+/* ========== 回答操作栏 ========== */
+.zmp-answer-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 8px;
+}
+.zmp-answer-toolbar button {
+  padding: 3px 10px;
+  font-size: 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #fafafa;
+  cursor: pointer;
+  color: #555;
+}
+.zmp-answer-toolbar button:hover {
+  background: #e8f0fe;
+  border-color: #4a90d9;
+  color: #1a73e8;
+}
+
+/* ========== 本地标签 ========== */
+.zmp-local-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  margin: 2px;
+  border-radius: 3px;
+  font-size: 11px;
+  background: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #ce93d8;
+}
+.zmp-tag-btn {
+  font-size: 11px;
+  padding: 1px 6px;
+  border: 1px dashed #bbb;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  color: #888;
+}
+.zmp-tag-btn:hover {
+  border-color: #7b1fa2;
+  color: #7b1fa2;
+}
+
+/* ========== 分页模式 ========== */
+.zmp-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 0;
+}
+.zmp-pagination button {
+  padding: 6px 14px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+.zmp-pagination button.active {
+  background: #0066ff;
+  color: #fff;
+  border-color: #0066ff;
+}
+
+/* ========== 评论折叠 ========== */
+.zmp-comment-folded {
+  opacity: 0.4;
+  max-height: 40px;
+  overflow: hidden;
+  position: relative;
+}
+.zmp-comment-folded::after {
+  content: '已折叠（点击展开）';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+  background: linear-gradient(transparent, #fff);
+  padding-top: 10px;
+}
+
+/* ========== 缩略图模式 ========== */
+.zmp-thumbnail img {
+  max-width: 300px !important;
+  max-height: 200px !important;
+  object-fit: cover;
+  cursor: zoom-in;
+}
+
+/* ========== 弹窗通用隐藏 ========== */
+body.zmp-hide-popups .Modal-backdrop,
+body.zmp-hide-popups [class*="Modal-wrapper"] {
+  display: none !important;
+}
