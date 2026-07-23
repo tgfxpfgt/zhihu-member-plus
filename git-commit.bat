@@ -16,22 +16,31 @@ if not exist "%GIT_EXE%" (
 )
 
 if not exist ".git" (
-    echo [1/3] 初始化 Git 仓库...
+    echo [1/4] 初始化 Git 仓库...
     "%GIT_EXE%" init
     "%GIT_EXE%" config --local user.email "user@local.dev"
     "%GIT_EXE%" config --local user.name "ZMP-Dev"
     echo.
 )
 
-echo [2/3] 添加所有文件...
+echo [2/4] 添加所有文件...
 "%GIT_EXE%" add -A
 echo.
 
-echo [3/3] 提交代码...
+echo [3/4] 提交代码...
 "%GIT_EXE%" commit -m "update: %date% %time%"
 echo.
 
+echo [4/4] 推送到 GitHub...
+"%GIT_EXE%" push origin master 2>nul
+if %errorlevel% equ 0 (
+    echo       推送成功！
+) else (
+    echo       推送跳过（未配置远程仓库或网络不可用）
+)
+echo.
+
 echo ========================================
-echo   提交完成！
+echo   完成！
 echo ========================================
 pause
