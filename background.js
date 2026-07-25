@@ -9,9 +9,16 @@ const tabActivityMap = new Map();
 // 节流定时器
 let throttleTimer = null;
 
-/**
- * 初始化：设置标签页监控
- */
+/** 知乎 URL 匹配 */
+function isZhihuUrl(url) {
+  return url && url.includes('zhihu.com');
+}
+
+/** 节流检查间隔（毫秒） */
+const THROTTLE_CHECK_INTERVAL = 30000;
+
+// ========== 生命周期 ==========
+
 chrome.runtime.onInstalled.addListener(() => {
   console.log('[ZMP] 知乎盐选会员增强助手已安装');
   startThrottleMonitor();
@@ -21,48 +28,29 @@ chrome.runtime.onStartup.addListener(() => {
   startThrottleMonitor();
 });
 
-/**
- * 监听标签页切换
- */
 chrome.tabs.onActivated.addListener((activeInfo) => {
-  // 记录新激活标签的时间
   tabActivityMap.set(activeInfo.tabId, Date.now());
-
-  // 检查其他知乎标签是否进入闲置
   checkIdleTabs(activeInfo.tabId);
 });
 
-/**
- * 监听标签页更新（导航）
- */
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.status === 'complete' && tab.url && isZhihuUrl(tab.url)) {
+  if (changeInfo.status === 'complete' && isZhihuUrl(tab.url)) {
     tabActivityMap.set(tabId, Date.now());
   }
 });
 
-/**
- * 标签页关闭时清理
- */
 chrome.tabs.onRemoved.addListener((tabId) => {
   tabActivityMap.delete(tabId);
 });
 
-/**
- * 判断是否为知乎URL
- */
-function isZhihuUrl(url) {
-  return url && (url.includes('zhihu.com') || url.includes('zhuanlan.zhihu.com'));
-}
+// ========== 节流监控 ==========
 
 /**
- * 启动节流监控定时器（每30秒检查一次）
+ * 启动节流监控定时器
  */
 function startThrottleMonitor() {
   if (throttleTimer) clearInterval(throttleTimer);
-  throttleTimer = setInterval(() => {
-    checkIdleTabs(null);
-  }, 30000);
+  throttleTimer = setInterval(() => checkIdleTabs(null), THROTTLE_CHECK_INTERVAL);
 }
 
 /**
@@ -70,27 +58,27 @@ function startThrottleMonitor() {
  */
 async function checkIdleTabs(activeTabId) {
   try {
-    const data = await chrome.storage.local.get('zmpConfig');
-    const config = data.zmpConfig || {};
-    const perfConfig = config.performance || {};
+    const { zmpConfig = {} } = await chrome.storage.local.get('zmpConfig');
+    const perfConfig = zmpConfig.performance || {};
 
     if (!perfConfig.throttleIdle) return;
 
-    const delay = (perfConfig.throttleDelay || 120) * 1000; // 转为毫秒
+    const delay = (perfConfig.throttleDelay || 120) * 1000;
     const now = Date.now();
 
-    const tabs = await chrome.tabs.query({ url: ['https://www.zhihu.com/*', 'https://zhuanlan.zhihu.com/*'] });
+    const tabs = await chrome.tabs.query({
+      url: ['https://www.zhihu.com/*', 'https://zhuanlan.zhihu.com/*'],
+    });
 
     for (const tab of tabs) {
       if (tab.id === activeTabId) continue;
 
       const lastActive = tabActivityMap.get(tab.id) || now;
       if (now - lastActive > delay) {
-        // 发送节流指令
         try {
           await chrome.tabs.sendMessage(tab.id, { action: 'throttle', idle: true });
         } catch (e) {
-          // 标签页可能未加载content script，忽略
+          // 标签页可能未加载 content script，忽略
         }
       }
     }
@@ -99,51 +87,63 @@ async function checkIdleTabs(activeTabId) {
   }
 }
 
+// ========== 消息处理 ==========
+
 /**
- * 消息监听：处理来自content script和popup的消息
+ * 消息处理映射表
+ * 每个处理函数接收 (message, sender, sendResponse)
+ * 返回 true 表示异步响应（保持 sendResponse 有效）
  */
+const MESSAGE_HANDLERS = {
+  getMemberStatus(_msg, _sender, sendResponse) {
+    handleGetMemberStatus(sendResponse);
+    return true; // 异步
+  },
+
+  updateMemberStatus(msg) {
+    handleUpdateMemberStatus(msg.data);
+    return false; // 同步，已处理
+  },
+
+  downloadFile(msg, _sender, sendResponse) {
+    handleDownload(msg.data, sendResponse);
+    return true; // 异步
+  },
+
+  getTabInfo(_msg, sender, sendResponse) {
+    if (sender.tab) {
+      sendResponse({ tabId: sender.tab.id, url: sender.tab.url });
+    }
+    return false;
+  },
+
+  throttleStateChange(_msg, sender) {
+    if (sender.tab) {
+      tabActivityMap.set(sender.tab.id, Date.now());
+    }
+    return false;
+  },
+};
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  switch (message.action) {
-    case 'getMemberStatus':
-      handleGetMemberStatus(sendResponse);
-      return true;
-
-    case 'updateMemberStatus':
-      handleUpdateMemberStatus(message.data);
-      sendResponse({ success: true });
-      break;
-
-    case 'downloadFile':
-      handleDownload(message.data, sendResponse);
-      return true;
-
-    case 'getTabInfo':
-      if (sender.tab) {
-        sendResponse({ tabId: sender.tab.id, url: sender.tab.url });
-      }
-      break;
-
-    case 'throttleStateChange':
-      // 标签页报告自己的节流状态
-      if (sender.tab) {
-        tabActivityMap.set(sender.tab.id, Date.now());
-      }
-      break;
-
-    default:
-      break;
+  const handler = MESSAGE_HANDLERS[message.action];
+  if (handler) {
+    return handler(message, sender, sendResponse);
   }
   return false;
 });
+
+// ========== 处理函数 ==========
 
 /**
  * 获取会员状态
  */
 async function handleGetMemberStatus(sendResponse) {
   try {
-    const data = await chrome.storage.local.get('zmpConfig');
-    const config = data.zmpConfig || {};
-    sendResponse({ memberStatus: config.memberStatus || { isMember: false, detected: false } });
+    const { zmpConfig = {} } = await chrome.storage.local.get('zmpConfig');
+    sendResponse({
+      memberStatus: zmpConfig.memberStatus || { isMember: false, detected: false },
+    });
   } catch (e) {
     sendResponse({ memberStatus: { isMember: false, detected: false } });
   }
@@ -154,13 +154,9 @@ async function handleGetMemberStatus(sendResponse) {
  */
 async function handleUpdateMemberStatus(statusData) {
   try {
-    const data = await chrome.storage.local.get('zmpConfig');
-    const config = data.zmpConfig || {};
-    config.memberStatus = {
-      ...statusData,
-      lastCheck: Date.now()
-    };
-    await chrome.storage.local.set({ zmpConfig: config });
+    const { zmpConfig = {} } = await chrome.storage.local.get('zmpConfig');
+    zmpConfig.memberStatus = { ...statusData, lastCheck: Date.now() };
+    await chrome.storage.local.set({ zmpConfig });
   } catch (e) {
     console.warn('[ZMP] 更新会员状态失败', e);
   }
@@ -179,7 +175,7 @@ async function handleDownload(downloadData, sendResponse) {
     const downloadId = await chrome.downloads.download({
       url: blob,
       filename: filename + ext,
-      saveAs: true
+      saveAs: true,
     });
 
     sendResponse({ success: true, downloadId });

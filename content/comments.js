@@ -1,6 +1,41 @@
 /**
  * 知乎盐选会员增强助手 - 评论区优化模块
  */
+
+/** 广告评论关键词 */
+const AD_COMMENT_KEYWORDS = [
+  '优惠', '折扣', '领券', '下单', '购买链接', '点击购买',
+  '限时', '秒杀', '特价', '券后', '复制', '淘口令',
+  '京东', '拼多多', '点击这里', '扫码', '加群', '私聊',
+];
+
+/** 回答操作栏按钮配置 */
+const ANSWER_TOOLBAR_BUTTONS = [
+  {
+    text: '复制全文',
+    getText: (answer) => {
+      const el = answer.querySelector('.RichContent-inner, .RichText');
+      return el ? el.innerText : null;
+    },
+  },
+  {
+    text: '复制作者',
+    getText: (answer) => {
+      const el = answer.querySelector('.AuthorInfo-name, [class*="AuthorInfo"] a, .UserLink a');
+      return el ? el.textContent.trim() : null;
+    },
+  },
+  {
+    text: '分享链接',
+    getText: (answer) => {
+      const answerId = answer.getAttribute('data-za-detail-view-element_id') || answer.id || '';
+      let url = window.location.href.split('#')[0];
+      if (answerId) url += `#answer-${answerId}`;
+      return url;
+    },
+  },
+];
+
 const ZMPComments = {
   config: null,
 
@@ -18,7 +53,7 @@ const ZMPComments = {
    * 处理评论区
    */
   processComments() {
-    const comments = document.querySelectorAll('.CommentItemV2, .CommentContent, [class*="CommentItem"]');
+    const comments = document.querySelectorAll(ZMPUtils.SELECTORS.COMMENTS);
     if (comments.length === 0) return;
 
     comments.forEach(comment => {
@@ -27,31 +62,23 @@ const ZMPComments = {
       // 折叠低质短评
       if (this.config.foldShortComments) {
         const contentEl = comment.querySelector('.CommentContent, [class*="CommentContent"]');
-        if (contentEl) {
-          const contentText = contentEl.textContent.trim();
-          if (contentText.length < this.config.minCommentLength) {
-            this.foldComment(comment, '短评已折叠');
-          }
+        if (contentEl && contentEl.textContent.trim().length < this.config.minCommentLength) {
+          this.foldComment(comment, '短评已折叠');
         }
       }
 
       // 折叠广告带货评论
-      if (this.config.foldAdComments) {
-        if (this.isAdComment(text)) {
-          this.foldComment(comment, '疑似广告已折叠');
-        }
+      if (this.config.foldAdComments && this.isAdComment(text)) {
+        this.foldComment(comment, '疑似广告已折叠');
       }
 
       // 关键词屏蔽
-      if (this.config.blockKeywords && this.config.blockKeywords.length > 0) {
-        const blocked = this.config.blockKeywords.some(kw => text.includes(kw));
-        if (blocked) {
-          this.foldComment(comment, '关键词屏蔽');
-        }
+      const keywords = this.config.blockKeywords;
+      if (keywords && keywords.length > 0 && keywords.some(kw => text.includes(kw))) {
+        this.foldComment(comment, '关键词屏蔽');
       }
     });
 
-    // 添加排序控件
     this.addSortControls();
   },
 
@@ -59,12 +86,7 @@ const ZMPComments = {
    * 判断是否为广告评论
    */
   isAdComment(text) {
-    const adKeywords = [
-      '优惠', '折扣', '领券', '下单', '购买链接', '点击购买',
-      '限时', '秒杀', '特价', '券后', '复制', '淘口令',
-      '京东', '拼多多', '点击这里', '扫码', '加群', '私聊'
-    ];
-    return adKeywords.some(kw => text.includes(kw));
+    return AD_COMMENT_KEYWORDS.some(kw => text.includes(kw));
   },
 
   /**
@@ -83,25 +105,19 @@ const ZMPComments = {
    * 添加评论区排序控件
    */
   addSortControls() {
-    const commentHeader = document.querySelector('.Comments-container .Card-header, [class*="Comment"] .Card-header');
+    const commentHeader = document.querySelector(ZMPUtils.SELECTORS.COMMENT_HEADER);
     if (!commentHeader || commentHeader.querySelector('.zmp-sort-btns')) return;
 
     const sortBtns = document.createElement('div');
     sortBtns.className = 'zmp-sort-btns';
     sortBtns.style.cssText = 'display:inline-flex;gap:6px;margin-left:12px;';
 
-    const byLikes = document.createElement('button');
-    byLikes.textContent = '按点赞';
-    byLikes.style.cssText = 'font-size:12px;padding:2px 8px;border:1px solid #ddd;border-radius:3px;background:#f9f9f9;cursor:pointer;';
-    byLikes.onclick = () => this.sortComments('likes');
+    const btnStyle = 'font-size:12px;padding:2px 8px;border:1px solid #ddd;border-radius:3px;background:#f9f9f9;cursor:pointer;';
+    sortBtns.append(
+      ZMPUtils.createButton({ text: '按点赞', style: btnStyle, onClick: () => this.sortComments('likes') }),
+      ZMPUtils.createButton({ text: '按时间', style: btnStyle, onClick: () => this.sortComments('time') }),
+    );
 
-    const byTime = document.createElement('button');
-    byTime.textContent = '按时间';
-    byTime.style.cssText = 'font-size:12px;padding:2px 8px;border:1px solid #ddd;border-radius:3px;background:#f9f9f9;cursor:pointer;';
-    byTime.onclick = () => this.sortComments('time');
-
-    sortBtns.appendChild(byLikes);
-    sortBtns.appendChild(byTime);
     commentHeader.appendChild(sortBtns);
   },
 
@@ -109,22 +125,16 @@ const ZMPComments = {
    * 评论排序
    */
   sortComments(type) {
-    const container = document.querySelector('.Comments-container, [class*="CommentList"]');
+    const container = document.querySelector(ZMPUtils.SELECTORS.COMMENT_CONTAINER);
     if (!container) return;
 
     const comments = Array.from(container.querySelectorAll('.CommentItemV2, [class*="CommentItem"]'));
     if (comments.length === 0) return;
 
-    comments.sort((a, b) => {
-      if (type === 'likes') {
-        const likesA = this.getLikeCount(a);
-        const likesB = this.getLikeCount(b);
-        return likesB - likesA;
-      } else {
-        // 按DOM顺序（时间）
-        return 0;
-      }
-    });
+    if (type === 'likes') {
+      comments.sort((a, b) => this.getLikeCount(b) - this.getLikeCount(a));
+    }
+    // 按时间排序 = 保持 DOM 顺序（无需操作）
 
     // 重新插入排序后的评论
     const parent = comments[0].parentNode;
@@ -136,82 +146,35 @@ const ZMPComments = {
    */
   getLikeCount(comment) {
     const likeBtn = comment.querySelector('[class*="like"] button, [class*="Like"] button, button[class*="vote"]');
-    if (likeBtn) {
-      const text = likeBtn.textContent.trim();
-      const num = parseInt(text.replace(/[^\d]/g, ''));
-      return isNaN(num) ? 0 : num;
-    }
-    return 0;
+    if (!likeBtn) return 0;
+    const num = parseInt(likeBtn.textContent.trim().replace(/[^\d]/g, ''));
+    return isNaN(num) ? 0 : num;
   },
 
   /**
    * 为回答添加快捷操作栏
+   * 通过 ANSWER_TOOLBAR_BUTTONS 配置驱动，避免重复代码
    */
   addAnswerToolbars() {
-    // 仅匹配顶层回答容器，避免嵌套匹配导致重复
-    const answers = document.querySelectorAll('.AnswerItem, .List-item > .ContentItem');
+    const answers = document.querySelectorAll(ZMPUtils.SELECTORS.ANSWERS);
     answers.forEach(answer => {
       if (answer.querySelector('.zmp-answer-toolbar')) return;
 
       const toolbar = document.createElement('div');
       toolbar.className = 'zmp-answer-toolbar';
 
-      // 复制全文
-      const copyBtn = document.createElement('button');
-      copyBtn.textContent = '复制全文';
-      copyBtn.onclick = () => {
-        const content = answer.querySelector('.RichContent-inner, .RichText');
-        if (content) {
-          navigator.clipboard.writeText(content.innerText).then(() => {
-            copyBtn.textContent = '已复制!';
-            setTimeout(() => { copyBtn.textContent = '复制全文'; }, 1500);
-          }).catch(() => {
-            copyBtn.textContent = '复制失败';
-            setTimeout(() => { copyBtn.textContent = '复制全文'; }, 1500);
-          });
-        }
-      };
+      ANSWER_TOOLBAR_BUTTONS.forEach(({ text, getText }) => {
+        const btn = ZMPUtils.createButton({ text });
+        btn.onclick = () => {
+          const content = getText(answer);
+          if (content) {
+            ZMPUtils.copyToClipboard(content, btn, text);
+          }
+        };
+        toolbar.appendChild(btn);
+      });
 
-      // 复制作者ID
-      const authorBtn = document.createElement('button');
-      authorBtn.textContent = '复制作者';
-      authorBtn.onclick = () => {
-        const authorEl = answer.querySelector('.AuthorInfo-name, [class*="AuthorInfo"] a, .UserLink a');
-        if (authorEl) {
-          navigator.clipboard.writeText(authorEl.textContent.trim()).then(() => {
-            authorBtn.textContent = '已复制!';
-            setTimeout(() => { authorBtn.textContent = '复制作者'; }, 1500);
-          }).catch(() => {
-            authorBtn.textContent = '复制失败';
-            setTimeout(() => { authorBtn.textContent = '复制作者'; }, 1500);
-          });
-        }
-      };
-
-      // 生成分享链接
-      const shareBtn = document.createElement('button');
-      shareBtn.textContent = '分享链接';
-      shareBtn.onclick = () => {
-        const answerId = answer.getAttribute('data-za-detail-view-element_id') ||
-                         answer.id || '';
-        let shareUrl = window.location.href.split('#')[0];
-        if (answerId) {
-          shareUrl += `#answer-${answerId}`;
-        }
-        navigator.clipboard.writeText(shareUrl).then(() => {
-          shareBtn.textContent = '已复制!';
-          setTimeout(() => { shareBtn.textContent = '分享链接'; }, 1500);
-        }).catch(() => {
-          shareBtn.textContent = '复制失败';
-          setTimeout(() => { shareBtn.textContent = '分享链接'; }, 1500);
-        });
-      };
-
-      toolbar.appendChild(copyBtn);
-      toolbar.appendChild(authorBtn);
-      toolbar.appendChild(shareBtn);
-
-      const header = answer.querySelector('.ContentItem-head, .AnswerItem-header, [class*="ContentItem-meta"]');
+      const header = answer.querySelector(ZMPUtils.SELECTORS.ANSWER_HEADER);
       if (header) {
         header.after(toolbar);
       } else {
@@ -225,7 +188,7 @@ const ZMPComments = {
    */
   foldDuplicateComments() {
     const comments = document.querySelectorAll('.CommentItemV2, [class*="CommentItem"]');
-    const seen = new Map();
+    const seen = new Set();
 
     comments.forEach(comment => {
       const content = comment.querySelector('.CommentContent, [class*="CommentContent"]');
@@ -237,8 +200,8 @@ const ZMPComments = {
       if (seen.has(text)) {
         this.foldComment(comment, '重复评论已折叠');
       } else {
-        seen.set(text, true);
+        seen.add(text);
       }
     });
-  }
+  },
 };

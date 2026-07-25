@@ -20,23 +20,13 @@ const ZMPReader = {
   applyReadingStyle() {
     document.body.classList.add('zmp-reader-styled');
 
-    const fontMap = {
-      'system': "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      'serif': "'Georgia', 'Noto Serif SC', 'Source Han Serif SC', serif",
-      'sans': "'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif",
-      'mono': "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-      'kaiti': "'KaiTi', 'STKaiti', '楷体', serif"
-    };
-
-    const fontFamily = fontMap[this.config.fontFamily] || fontMap['system'];
-    const fontSize = this.config.fontSize + 'px';
-    const lineHeight = String(this.config.lineHeight);
+    const fontFamily = ZMPUtils.FONT_MAP[this.config.fontFamily] || ZMPUtils.FONT_MAP['system'];
 
     document.body.style.setProperty('--zmp-font-family', fontFamily);
-    document.body.style.setProperty('--zmp-font-size', fontSize);
-    document.body.style.setProperty('--zmp-line-height', lineHeight);
+    document.body.style.setProperty('--zmp-font-size', this.config.fontSize + 'px');
+    document.body.style.setProperty('--zmp-line-height', String(this.config.lineHeight));
 
-    // 背景色（先清除旧class再添加，防止叠加）
+    // 背景色（先清除旧 class 再添加，防止叠加）
     document.body.classList.remove('zmp-bg-green', 'zmp-bg-dark');
     if (this.config.bgColor === 'green') {
       document.body.classList.add('zmp-bg-green');
@@ -49,9 +39,7 @@ const ZMPReader = {
    * 应用沉浸式阅读模式
    */
   applyImmersiveMode() {
-    if (this.config.immersiveMode) {
-      document.body.classList.add('zmp-immersive');
-    }
+    ZMPUtils.toggleBodyClass('zmp-immersive', this.config.immersiveMode);
   },
 
   /**
@@ -68,9 +56,7 @@ const ZMPReader = {
    * 夜间模式
    */
   applyNightMode() {
-    if (this.config.nightMode) {
-      document.body.classList.add('zmp-night-mode');
-    }
+    ZMPUtils.toggleBodyClass('zmp-night-mode', this.config.nightMode);
   },
 
   toggleNightMode() {
@@ -84,7 +70,7 @@ const ZMPReader = {
    * 长文章分页
    */
   setupPagination() {
-    const content = document.querySelector('.Post-RichTextContainer, .RichContent-inner, .RichText');
+    const content = document.querySelector(ZMPUtils.SELECTORS.CONTENT);
     if (!content) return;
 
     const contentHeight = content.scrollHeight;
@@ -99,47 +85,46 @@ const ZMPReader = {
     // 计算每页段落数
     const pagesCount = Math.ceil(contentHeight / (viewportHeight * 1.5));
     const perPage = Math.ceil(paragraphs.length / pagesCount);
-
-    let currentPage = 0;
     const totalPages = Math.ceil(paragraphs.length / perPage);
-
-    // 隐藏所有段落
-    const showPage = (page) => {
-      currentPage = page;
-      paragraphs.forEach((p, i) => {
-        const start = page * perPage;
-        const end = start + perPage;
-        p.style.display = (i >= start && i < end) ? '' : 'none';
-      });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      updateButtons();
-    };
+    let currentPage = 0;
 
     // 创建分页控件
     const pagination = document.createElement('div');
     pagination.className = 'zmp-pagination';
 
-    const prevBtn = document.createElement('button');
-    prevBtn.textContent = '上一页';
-    prevBtn.onclick = () => { if (currentPage > 0) showPage(currentPage - 1); };
+    const prevBtn = ZMPUtils.createButton({
+      text: '上一页',
+      onClick: () => { if (currentPage > 0) showPage(currentPage - 1); },
+    });
 
     const info = document.createElement('span');
     info.style.cssText = 'padding: 6px 12px; font-size: 13px; color: #666;';
 
-    const nextBtn = document.createElement('button');
-    nextBtn.textContent = '下一页';
-    nextBtn.onclick = () => { if (currentPage < totalPages - 1) showPage(currentPage + 1); };
+    const nextBtn = ZMPUtils.createButton({
+      text: '下一页',
+      onClick: () => { if (currentPage < totalPages - 1) showPage(currentPage + 1); },
+    });
 
-    pagination.appendChild(prevBtn);
-    pagination.appendChild(info);
-    pagination.appendChild(nextBtn);
+    pagination.append(prevBtn, info, nextBtn);
     content.parentNode.insertBefore(pagination, content.nextSibling);
 
-    const updateButtons = () => {
+    // 分页显示逻辑
+    function showPage(page) {
+      currentPage = page;
+      const start = page * perPage;
+      const end = start + perPage;
+      paragraphs.forEach((p, i) => {
+        p.style.display = (i >= start && i < end) ? '' : 'none';
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      updateButtons();
+    }
+
+    function updateButtons() {
       info.textContent = `${currentPage + 1} / ${totalPages}`;
       prevBtn.disabled = currentPage === 0;
       nextBtn.disabled = currentPage === totalPages - 1;
-    };
+    }
 
     showPage(0);
   },
@@ -156,14 +141,8 @@ const ZMPReader = {
         document.body.style.setProperty('--zmp-line-height', String(value));
         break;
       case 'fontFamily':
-        const fontMap = {
-          'system': "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-          'serif': "'Georgia', 'Noto Serif SC', serif",
-          'sans': "'Helvetica Neue', 'PingFang SC', sans-serif",
-          'mono': "'Consolas', monospace",
-          'kaiti': "'KaiTi', 'STKaiti', serif"
-        };
-        document.body.style.setProperty('--zmp-font-family', fontMap[value] || fontMap['system']);
+        document.body.style.setProperty('--zmp-font-family',
+          ZMPUtils.FONT_MAP[value] || ZMPUtils.FONT_MAP['system']);
         break;
       case 'bgColor':
         document.body.classList.remove('zmp-bg-green', 'zmp-bg-dark');
@@ -171,5 +150,5 @@ const ZMPReader = {
         else if (value === 'dark') document.body.classList.add('zmp-bg-dark');
         break;
     }
-  }
+  },
 };

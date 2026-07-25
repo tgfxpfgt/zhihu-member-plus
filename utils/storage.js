@@ -86,12 +86,12 @@ const ZMPStorage = {
     try {
       const data = await chrome.storage.local.get('zmpConfig');
       if (data.zmpConfig) {
-        return this._deepMerge(JSON.parse(JSON.stringify(this.DEFAULTS)), data.zmpConfig);
+        return this._deepMerge(ZMPUtils.deepClone(this.DEFAULTS), data.zmpConfig);
       }
-      return JSON.parse(JSON.stringify(this.DEFAULTS));
+      return ZMPUtils.deepClone(this.DEFAULTS);
     } catch (e) {
       console.warn('[ZMP] 读取配置失败，使用默认值', e);
-      return JSON.parse(JSON.stringify(this.DEFAULTS));
+      return ZMPUtils.deepClone(this.DEFAULTS);
     }
   },
 
@@ -167,7 +167,7 @@ const ZMPStorage = {
   async importConfig(jsonStr) {
     try {
       const imported = JSON.parse(jsonStr);
-      const merged = this._deepMerge(JSON.parse(JSON.stringify(this.DEFAULTS)), imported);
+      const merged = this._deepMerge(ZMPUtils.deepClone(this.DEFAULTS), imported);
       await this.saveAll(merged);
       return true;
     } catch (e) {

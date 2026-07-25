@@ -2,10 +2,45 @@
  * 知乎盐选会员增强助手 - 会员识别与权益模块
  * 仅对已登录付费会员账号生效，不做任何破解/绕过逻辑
  */
+
+/** 会员标识 DOM 选择器（命中任一即认为已登录会员） */
+const MEMBER_INDICATOR_SELECTORS = [
+  '[class*="AppHeader-userInfo"] [class*="vip"]',
+  '[class*="AppHeader-userInfo"] [class*="member"]',
+  '[class*="AppHeader-userInfo"] [class*="salt"]',
+  '.AppHeader-profileEntry [class*="Vip"]',
+  '.AppHeader-profileEntry [class*="Member"]',
+  '[class*="ProfileHeader"] [class*="vip"]',
+  '[class*="SaltChannel"]',
+  'a[href*="salt.vip"]',
+];
+
+/** 会员功能入口选择器 */
+const MEMBER_FEATURE_SELECTORS = [
+  '[class*="MemberCenter"]',
+  'a[href*="member"]',
+  '[data-za-detail-view-element_name*="会员"]',
+];
+
+/** 付费遮挡选择器 */
+const PAYWALL_SELECTORS = [
+  '.ContentItem-expandButton',
+  '.ContentItem-arrowIcon',
+  '[class*="ContentItem-expand"]',
+  '[class*="paywall"]',
+  '.OpenInAppButton',
+  '[class*="Modal-backdrop"]',
+  '.Modal-wrapper',
+];
+
+/** 付费相关关键词（用于文本匹配） */
+const PAYWALL_KEYWORDS = ['开通', '解锁', '盐选', '会员', '付费'];
+
 const ZMPMember = {
   isMember: false,
   config: null,
   _observer: null,
+  _labelObserver: null,
   _labelTimer: null,
 
   /**
@@ -27,55 +62,31 @@ const ZMPMember = {
 
   /**
    * 检测当前登录用户的会员状态
-   * 原理：读取知乎页面已渲染的会员标识DOM（服务端验证后下发）
+   * 原理：读取知乎页面已渲染的会员标识DOM + cookie（服务端验证后下发）
    */
   async detectMemberStatus() {
     try {
-      // 方式1：检测页面顶部用户菜单中的会员标识
-      const memberIndicators = [
-        // 盐选会员标识
-        document.querySelector('[class*="AppHeader-userInfo"] [class*="vip"]'),
-        document.querySelector('[class*="AppHeader-userInfo"] [class*="member"]'),
-        document.querySelector('[class*="AppHeader-userInfo"] [class*="salt"]'),
-        // 用户信息区域的会员图标
-        document.querySelector('.AppHeader-profileEntry [class*="Vip"]'),
-        document.querySelector('.AppHeader-profileEntry [class*="Member"]'),
-        // 个人中心会员标识
-        document.querySelector('[class*="ProfileHeader"] [class*="vip"]'),
-        // 盐选频道入口（仅会员可见）
-        document.querySelector('[class*="SaltChannel"]'),
-        document.querySelector('a[href*="salt.vip"]'),
-        // 会员专属标识文字
-        ...Array.from(document.querySelectorAll('[class*="AppHeader"] span, [class*="AppHeader"] a')).filter(
-          el => el.textContent.includes('盐选') || el.textContent.includes('会员')
-        )
-      ];
+      const hasIndicator = MEMBER_INDICATOR_SELECTORS.some(sel => document.querySelector(sel));
+      const hasFeature = MEMBER_FEATURE_SELECTORS.some(sel => document.querySelector(sel));
 
-      // 方式2：检测页面中是否有会员专属功能入口
-      const memberFeatures = [
-        document.querySelector('[class*="MemberCenter"]'),
-        document.querySelector('a[href*="member"]'),
-        document.querySelector('[data-za-detail-view-element_name*="会员"]')
-      ];
-
-      // 方式3：检测cookie中的知乎会员标识（仅匹配知乎特有字段）
+      // cookie 检测：匹配知乎特有的会员标识字段
       const cookies = document.cookie;
       const hasMemberCookie = /(?:^|;\s*)(?:z_c0|q_c1)/.test(cookies) &&
         (cookies.includes('salt_vip') || cookies.includes('member_status=1') || cookies.includes('is_vip=1'));
 
-      // 综合判断：任一指标命中即认为已登录会员
-      const hasIndicator = memberIndicators.some(el => el !== null && el !== undefined);
-      const hasFeature = memberFeatures.some(el => el !== null && el !== undefined);
+      // 额外检测：AppHeader 区域包含"盐选"/"会员"文字的元素
+      const hasMemberText = Array.from(
+        document.querySelectorAll('[class*="AppHeader"] span, [class*="AppHeader"] a')
+      ).some(el => el.textContent.includes('盐选') || el.textContent.includes('会员'));
 
-      this.isMember = hasIndicator || hasFeature || hasMemberCookie;
+      this.isMember = hasIndicator || hasFeature || hasMemberCookie || hasMemberText;
 
-      // 缓存会员状态
+      // 缓存会员状态到 background
       chrome.runtime.sendMessage({
         action: 'updateMemberStatus',
-        data: { isMember: this.isMember, detected: true }
+        data: { isMember: this.isMember, detected: true },
       }).catch(() => {});
 
-      // 给body添加会员标识class
       if (this.isMember) {
         document.body.classList.add('zmp-member');
       }
@@ -91,33 +102,14 @@ const ZMPMember = {
    * 应用会员专属增强（仅会员生效）
    */
   applyMemberEnhancements() {
-    // 1. 移除付费遮挡浮层
-    if (this.config.autoRemovePaywall) {
-      this.removePaywallOverlay();
-    }
-
-    // 2. 高清原图
-    if (this.config.hdImages) {
-      this.enableHDImages();
-    }
-
-    // 3. 隐藏升级弹窗
+    if (this.config.autoRemovePaywall) this.removePaywallOverlay();
+    if (this.config.hdImages) this.enableHDImages();
     if (this.config.hideUpgradePopup) {
       document.body.classList.add('zmp-hide-upgrade');
-      this.observeUpgradePopups();
+      this.observePaywall();
     }
-
-    // 4. 无干扰阅读
-    if (this.config.noDisturbReading) {
-      document.body.classList.add('zmp-no-disturb');
-    }
-
-    // 5. 全屏阅读
-    if (this.config.fullscreenReading) {
-      document.body.classList.add('zmp-fullscreen-reading');
-    }
-
-    // 6. 隐藏试读截断线
+    if (this.config.noDisturbReading) document.body.classList.add('zmp-no-disturb');
+    if (this.config.fullscreenReading) document.body.classList.add('zmp-fullscreen-reading');
     if (this.config.hideTrialCutoff) {
       document.body.classList.add('zmp-hide-trial-cutoff');
       this.removeTrialCutoffs();
@@ -129,23 +121,12 @@ const ZMPMember = {
    * 注意：仅移除前端UI遮挡，知乎服务端已向会员账号下发完整内容
    */
   removePaywallOverlay() {
-    const selectors = [
-      '.ContentItem-expandButton',
-      '.ContentItem-arrowIcon',
-      '[class*="ContentItem-expand"]',
-      '[class*="paywall"]',
-      '.OpenInAppButton',
-      '[class*="Modal-backdrop"]',
-      '.Modal-wrapper'
-    ];
-
-    selectors.forEach(sel => {
+    PAYWALL_SELECTORS.forEach(sel => {
       document.querySelectorAll(sel).forEach(el => {
-        // 只移除与付费解锁相关的弹窗
         const text = el.textContent || '';
-        if (text.includes('开通') || text.includes('解锁') || text.includes('盐选') ||
-            text.includes('会员') || text.includes('付费') || sel.includes('paywall') ||
-            sel.includes('expand')) {
+        // 只移除与付费解锁相关的弹窗
+        if (text && PAYWALL_KEYWORDS.some(kw => text.includes(kw)) ||
+            sel.includes('paywall') || sel.includes('expand')) {
           el.style.display = 'none';
         }
       });
@@ -167,30 +148,23 @@ const ZMPMember = {
   },
 
   /**
-   * 监听并移除动态出现的付费遮挡 + 升级弹窗（合并为单个observer）
+   * 监听并移除动态出现的付费遮挡 + 升级弹窗（合并为单个 observer）
    */
   observePaywall() {
     if (this._observer) return; // 防止重复创建
-    this._observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          if (node.nodeType !== 1) continue;
-          const cls = (typeof node.className === 'string') ? node.className : '';
-          // 拦截升级弹窗
-          if (cls.includes('UpgradeModal') || cls.includes('PaywallModal')) {
-            node.style.display = 'none';
-            continue;
-          }
-          // 拦截付费遮挡浮层
-          const text = node.textContent || '';
-          if ((text.includes('开通盐选') || text.includes('解锁全文') || text.includes('付费阅读')) &&
-              (cls.includes('Modal') || cls.includes('Button') || cls.includes('expand') || cls.includes('paywall'))) {
-            node.style.display = 'none';
-          }
-        }
+    this._observer = ZMPUtils.createBodyObserver((node, cls) => {
+      // 拦截升级弹窗
+      if (cls.includes('UpgradeModal') || cls.includes('PaywallModal')) {
+        node.style.display = 'none';
+        return;
+      }
+      // 拦截付费遮挡浮层
+      const text = node.textContent || '';
+      if ((text.includes('开通盐选') || text.includes('解锁全文') || text.includes('付费阅读')) &&
+          (cls.includes('Modal') || cls.includes('Button') || cls.includes('expand') || cls.includes('paywall'))) {
+        node.style.display = 'none';
       }
     });
-    this._observer.observe(document.body, { childList: true, subtree: true });
   },
 
   /**
@@ -203,14 +177,6 @@ const ZMPMember = {
         img.src = hdSrc;
       }
     });
-  },
-
-  /**
-   * 监听升级弹窗（已合并到observePaywall，此方法保留兼容但不再创建新observer）
-   */
-  observeUpgradePopups() {
-    // 已合并到 observePaywall 中统一处理
-    this.observePaywall();
   },
 
   /**
@@ -238,21 +204,19 @@ const ZMPMember = {
     if (!this.config.contentLabels) return;
 
     const processCards = () => {
-      const cards = document.querySelectorAll('.ContentItem, .Card, [class*="ContentItem"]');
+      const cards = document.querySelectorAll(ZMPUtils.SELECTORS.CARDS);
       cards.forEach(card => {
         if (card.querySelector('.zmp-content-label')) return; // 已标记
 
-        // 使用classList和属性检测代替innerHTML（性能提升10x+）
         const cls = card.className || '';
         const text = card.textContent || '';
-        let labelType = 'free';
-        let labelText = '免费';
 
         const hasSaltMark = cls.includes('salt') || cls.includes('Salt') ||
           card.querySelector('[class*="salt"], [class*="Salt"], [data-type="salt"]') !== null;
         const hasPaidMark = cls.includes('paid') || cls.includes('EBook') ||
           card.querySelector('[class*="paid"], [class*="EBook"], [class*="ebook"]') !== null;
 
+        let labelType, labelText;
         if (hasSaltMark || text.includes('盐选会员免费')) {
           labelType = 'member';
           labelText = '盐选免费';
@@ -260,7 +224,7 @@ const ZMPMember = {
           labelType = 'paid';
           labelText = '付费';
         } else {
-          return; // 免费内容不添加标签，避免干扰阅读
+          return; // 免费内容不添加标签
         }
 
         const label = document.createElement('span');
@@ -273,12 +237,12 @@ const ZMPMember = {
 
     // 延迟执行等待页面渲染
     setTimeout(processCards, 1500);
+
     // 监听新增内容（防抖处理，避免频繁触发）
-    const labelObserver = new MutationObserver(() => {
+    this._labelObserver = ZMPUtils.createBodyObserver(() => {
       if (this._labelTimer) clearTimeout(this._labelTimer);
       this._labelTimer = setTimeout(processCards, 800);
     });
-    labelObserver.observe(document.body, { childList: true, subtree: true });
   },
 
   /**
@@ -303,5 +267,13 @@ const ZMPMember = {
     };
 
     setTimeout(markCards, 2000);
-  }
+  },
+
+  /**
+   * 销毁观察器
+   */
+  destroy() {
+    if (this._observer) { this._observer.disconnect(); this._observer = null; }
+    if (this._labelObserver) { this._labelObserver.disconnect(); this._labelObserver = null; }
+  },
 };

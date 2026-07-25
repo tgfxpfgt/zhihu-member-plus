@@ -36,6 +36,7 @@
         "https://zhuanlan.zhihu.com/*"
       ],
       "js": [
+        "utils/helpers.js",
         "utils/storage.js",
         "content/member.js",
         "content/reader.js",

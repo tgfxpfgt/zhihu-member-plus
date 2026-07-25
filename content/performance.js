@@ -11,6 +11,9 @@ const ZMPPerformance = {
   _throttleHideTimer: null,
   _videoObserver: null,
   _headObserver: null,
+  _thumbnailClickHandler: null,
+  _visibilityHandler: null,
+  _messageHandler: null,
 
   async init(config) {
     this.config = config.performance;
@@ -39,56 +42,45 @@ const ZMPPerformance = {
 
     pauseVideos();
 
-    // 监听新增video
-    const videoObserver = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          if (node.nodeType !== 1) continue;
-          if (node.tagName === 'VIDEO') {
-            node.autoplay = false;
-            node.pause();
-          }
-          const videos = node.querySelectorAll ? node.querySelectorAll('video') : [];
-          videos.forEach(v => { v.autoplay = false; v.pause(); });
-        }
+    // 监听新增 video（存储引用以便销毁）
+    this._videoObserver = ZMPUtils.createBodyObserver((node) => {
+      if (node.tagName === 'VIDEO') {
+        node.autoplay = false;
+        node.pause();
       }
+      const videos = node.querySelectorAll ? node.querySelectorAll('video') : [];
+      videos.forEach(v => { v.autoplay = false; v.pause(); });
     });
-    videoObserver.observe(document.body, { childList: true, subtree: true });
   },
 
   /**
    * 移除预加载标签
    */
   removePrefetch() {
-    // 移除已有的prefetch/preload
-    document.querySelectorAll('link[rel="prefetch"], link[rel="preload"], link[rel="prerender"]').forEach(link => {
-      link.remove();
-    });
+    // 移除已有的 prefetch/preload/prerender
+    document.querySelectorAll('link[rel="prefetch"], link[rel="preload"], link[rel="prerender"]')
+      .forEach(link => link.remove());
 
-    // 监听新增的预加载标签
-    const headObserver = new MutationObserver((mutations) => {
+    // 监听新增预加载标签（存储引用以便销毁）
+    this._headObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          if (node.nodeType !== 1) continue;
-          if (node.tagName === 'LINK') {
-            const rel = node.getAttribute('rel');
-            if (rel === 'prefetch' || rel === 'preload' || rel === 'prerender') {
-              node.remove();
-            }
+          if (node.nodeType !== 1 || node.tagName !== 'LINK') continue;
+          const rel = node.getAttribute('rel');
+          if (rel === 'prefetch' || rel === 'preload' || rel === 'prerender') {
+            node.remove();
           }
         }
       }
     });
-    headObserver.observe(document.head, { childList: true });
+    this._headObserver.observe(document.head, { childList: true });
   },
 
   /**
    * 图片智能懒加载
    */
   setupLazyLoad() {
-    const PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-
-    // 复用已有observer，避免重复创建导致泄漏
+    // 复用已有 observer，避免重复创建导致泄漏
     if (!this.imageObserver) {
       this.imageObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -102,9 +94,7 @@ const ZMPPerformance = {
             this.imageObserver.unobserve(img);
           }
         });
-      }, {
-        rootMargin: '200px 0px'
-      });
+      }, { rootMargin: '200px 0px' });
     }
 
     const processImages = () => {
@@ -119,11 +109,11 @@ const ZMPPerformance = {
         // 首屏图片不延迟
         if (rect.top < window.innerHeight + 200) return;
 
-        // 保存原始src，替换为占位图
+        // 保存原始 src，替换为占位图
         const originalSrc = img.src || img.getAttribute('data-actualsrc') || img.getAttribute('data-original');
         if (originalSrc && !originalSrc.startsWith('data:')) {
           img.setAttribute('data-zmp-src', originalSrc);
-          img.src = PLACEHOLDER;
+          img.src = ZMPUtils.PLACEHOLDER_IMG;
           this.imageObserver.observe(img);
         }
       });
@@ -145,8 +135,8 @@ const ZMPPerformance = {
   enableThumbnailMode() {
     document.body.classList.add('zmp-thumbnail');
 
-    // 点击缩略图加载原图
-    document.addEventListener('click', (e) => {
+    // 点击缩略图加载原图（存储引用以便移除）
+    this._thumbnailClickHandler = (e) => {
       const img = e.target;
       if (img.tagName === 'IMG' && img.closest('.zmp-thumbnail')) {
         const originalSrc = img.getAttribute('data-actualsrc') || img.getAttribute('data-original');
@@ -156,7 +146,8 @@ const ZMPPerformance = {
           img.src = originalSrc;
         }
       }
-    });
+    };
+    document.addEventListener('click', this._thumbnailClickHandler);
   },
 
   /**
@@ -174,15 +165,13 @@ const ZMPPerformance = {
    */
   cleanIdleDOM() {
     try {
-      const viewportBottom = window.scrollY + window.innerHeight * 3;
-
       // 移除已隐藏且远离视口的节点
       document.querySelectorAll('[style*="display: none"], [style*="display:none"]').forEach(el => {
         const rect = el.getBoundingClientRect();
         if (rect.top > window.innerHeight * 3 || rect.bottom < -window.innerHeight * 3) {
           // 仅移除广告类隐藏节点，不移除用户内容
-          const cls = el.className || '';
-          if (typeof cls === 'string' && (cls.includes('zmp-') || cls.includes('Ad') || cls.includes('ad'))) {
+          const cls = ZMPUtils.getClassName(el);
+          if (cls.includes('zmp-') || cls.includes('Ad') || cls.includes('ad')) {
             el.remove();
           }
         }
@@ -203,21 +192,19 @@ const ZMPPerformance = {
    * 监听来自background的节流消息
    */
   listenThrottleMessage() {
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    this._messageHandler = (message, sender, sendResponse) => {
       if (message.action === 'throttle') {
-        if (message.idle) {
-          this.enterThrottleMode();
-        } else {
-          this.exitThrottleMode();
-        }
+        if (message.idle) this.enterThrottleMode();
+        else this.exitThrottleMode();
         sendResponse({ success: true });
       }
-    });
+    };
+    chrome.runtime.onMessage.addListener(this._messageHandler);
 
-    // 页面重新获得焦点时退出节流
-    document.addEventListener('visibilitychange', () => {
+    // 页面可见性变化时进入/退出节流
+    this._visibilityHandler = () => {
       if (!document.hidden) {
-        // 清除待执行的节流定时器
+        // 页面重新获得焦点：退出节流
         if (this._throttleHideTimer) {
           clearTimeout(this._throttleHideTimer);
           this._throttleHideTimer = null;
@@ -231,7 +218,8 @@ const ZMPPerformance = {
           this._throttleHideTimer = null;
         }, (this.config.throttleDelay || 120) * 1000);
       }
-    });
+    };
+    document.addEventListener('visibilitychange', this._visibilityHandler);
   },
 
   /**
@@ -241,15 +229,8 @@ const ZMPPerformance = {
     if (this.isThrottled) return;
     this.isThrottled = true;
 
-    // 暂停所有视频
     document.querySelectorAll('video').forEach(v => v.pause());
-
-    // 停止图片懒加载观察
-    if (this.imageObserver) {
-      this.imageObserver.disconnect();
-    }
-
-    // 暂停动画
+    if (this.imageObserver) this.imageObserver.disconnect();
     document.body.style.setProperty('animation-play-state', 'paused', 'important');
 
     console.log('[ZMP] 进入节流模式');
@@ -262,29 +243,35 @@ const ZMPPerformance = {
     if (!this.isThrottled) return;
     this.isThrottled = false;
 
-    // 恢复图片懒加载（复用已有observer，仅重新处理图片）
-    if (this.config.lazyLoadImages) {
-      this.setupLazyLoad();
-    }
-
-    // 恢复动画
+    // 恢复图片懒加载
+    if (this.config.lazyLoadImages) this.setupLazyLoad();
     document.body.style.removeProperty('animation-play-state');
 
-    // 通知background恢复活跃
     chrome.runtime.sendMessage({ action: 'throttleStateChange' }).catch(() => {});
 
     console.log('[ZMP] 退出节流模式');
   },
 
   /**
-   * 销毁（页面卸载时）
+   * 销毁所有 observer / timer / listener（页面卸载或节流时调用）
    */
   destroy() {
-    if (this.imageObserver) {
-      this.imageObserver.disconnect();
+    if (this.imageObserver) { this.imageObserver.disconnect(); this.imageObserver = null; }
+    if (this._videoObserver) { this._videoObserver.disconnect(); this._videoObserver = null; }
+    if (this._headObserver) { this._headObserver.disconnect(); this._headObserver = null; }
+    if (this.domCleanTimer) { clearInterval(this.domCleanTimer); this.domCleanTimer = null; }
+    if (this._throttleHideTimer) { clearTimeout(this._throttleHideTimer); this._throttleHideTimer = null; }
+    if (this._thumbnailClickHandler) {
+      document.removeEventListener('click', this._thumbnailClickHandler);
+      this._thumbnailClickHandler = null;
     }
-    if (this.domCleanTimer) {
-      clearInterval(this.domCleanTimer);
+    if (this._visibilityHandler) {
+      document.removeEventListener('visibilitychange', this._visibilityHandler);
+      this._visibilityHandler = null;
     }
-  }
+    if (this._messageHandler) {
+      chrome.runtime.onMessage.removeListener(this._messageHandler);
+      this._messageHandler = null;
+    }
+  },
 };

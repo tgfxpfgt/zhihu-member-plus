@@ -2,6 +2,31 @@
  * 知乎盐选会员增强助手 - Content Script 主入口
  * 调度所有子模块，监听配置变更
  */
+
+/**
+ * 配置→CSS类 映射表
+ * 每个条目：{ section, key, cls } 表示 config[section][key] → body.cls
+ */
+const CLASS_TOGGLES = [
+  // purify
+  { section: 'purify', key: 'hideAds',          cls: 'zmp-hide-ads' },
+  { section: 'purify', key: 'hideLiveStream',   cls: 'zmp-hide-live' },
+  { section: 'purify', key: 'hideCourseAds',    cls: 'zmp-hide-course' },
+  { section: 'purify', key: 'hideGoodsCards',   cls: 'zmp-hide-goods' },
+  { section: 'purify', key: 'hideConsultCards', cls: 'zmp-hide-consult' },
+  { section: 'purify', key: 'hideMemberPromo',  cls: 'zmp-hide-member-promo' },
+  // member
+  { section: 'member', key: 'noDisturbReading', cls: 'zmp-no-disturb' },
+  { section: 'member', key: 'fullscreenReading', cls: 'zmp-fullscreen-reading' },
+  { section: 'member', key: 'hideTrialCutoff',  cls: 'zmp-hide-trial-cutoff' },
+  { section: 'member', key: 'hideUpgradePopup', cls: 'zmp-hide-upgrade' },
+  // performance
+  { section: 'performance', key: 'disableAnimations', cls: 'zmp-no-animations' },
+  { section: 'performance', key: 'thumbnailMode',     cls: 'zmp-thumbnail' },
+  // uiEnhance
+  { section: 'uiEnhance', key: 'widescreen', cls: 'zmp-widescreen' },
+];
+
 const ZMPMain = {
   config: null,
   initialized: false,
@@ -14,7 +39,6 @@ const ZMPMain = {
     this.initialized = true;
 
     try {
-      // 读取配置
       this.config = await ZMPStorage.getAll();
 
       // 按顺序初始化各模块
@@ -28,14 +52,11 @@ const ZMPMain = {
       await ZMPUIEnhance.init(this.config);
 
       // 宽屏适配
-      if (this.config.uiEnhance && this.config.uiEnhance.widescreen) {
+      if (this.config.uiEnhance?.widescreen) {
         document.body.classList.add('zmp-widescreen');
       }
 
-      // 监听配置实时变更
       this.listenConfigChanges();
-
-      // 监听来自popup的消息
       this.listenMessages();
 
       console.log('[ZMP] 知乎盐选会员增强助手已启动 ✓');
@@ -50,90 +71,70 @@ const ZMPMain = {
   listenConfigChanges() {
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area !== 'local' || !changes.zmpConfig) return;
-
       const newConfig = changes.zmpConfig.newValue;
       if (!newConfig) return;
 
       this.config = ZMPStorage._deepMerge(
-        JSON.parse(JSON.stringify(ZMPStorage.DEFAULTS)),
+        ZMPUtils.deepClone(ZMPStorage.DEFAULTS),
         newConfig
       );
-
       this.applyConfigChanges();
     });
   },
 
   /**
    * 应用配置变更
+   * 通过 CLASS_TOGGLES 映射表批量切换 CSS 类，避免手写重复逻辑
    */
   applyConfigChanges() {
     const config = this.config;
 
-    // 阅读样式实时更新
-    if (config.reader) {
-      ZMPReader.config = config.reader;
-      ZMPReader.applyReadingStyle();
+    // 1. 同步各模块的 config 引用
+    const moduleConfigMap = {
+      reader: ZMPReader,
+      purify: ZMPPurify,
+      member: ZMPMember,
+      performance: ZMPPerformance,
+      uiEnhance: ZMPUIEnhance,
+    };
+    for (const [section, module] of Object.entries(moduleConfigMap)) {
+      if (config[section]) module.config = config[section];
+    }
 
-      // 沉浸式模式
-      if (config.reader.immersiveMode) {
-        document.body.classList.add('zmp-immersive');
-      } else {
-        document.body.classList.remove('zmp-immersive');
-      }
-
-      // 夜间模式
-      if (config.reader.nightMode) {
-        document.body.classList.add('zmp-night-mode');
-      } else {
-        document.body.classList.remove('zmp-night-mode');
+    // 2. 批量切换 CSS 类（数据驱动）
+    for (const { section, key, cls } of CLASS_TOGGLES) {
+      if (config[section]) {
+        ZMPUtils.toggleBodyClass(cls, config[section][key]);
       }
     }
 
-    // 净化设置
-    if (config.purify) {
-      ZMPPurify.config = config.purify;
-      // 重新应用class
-      document.body.classList.toggle('zmp-hide-ads', config.purify.hideAds);
-      document.body.classList.toggle('zmp-hide-live', config.purify.hideLiveStream);
-      document.body.classList.toggle('zmp-hide-course', config.purify.hideCourseAds);
-      document.body.classList.toggle('zmp-hide-goods', config.purify.hideGoodsCards);
-      document.body.classList.toggle('zmp-hide-consult', config.purify.hideConsultCards);
-      document.body.classList.toggle('zmp-hide-member-promo', config.purify.hideMemberPromo);
+    // 3. 阅读器：沉浸式 + 夜间模式（需要 class 而非 toggle 值）
+    if (config.reader) {
+      ZMPReader.applyReadingStyle();
+      ZMPUtils.toggleBodyClass('zmp-immersive', config.reader.immersiveMode);
+      ZMPUtils.toggleBodyClass('zmp-night-mode', config.reader.nightMode);
+    }
 
-      // 重新过滤
+    // 4. 净化：重新过滤信息流
+    if (config.purify) {
       ZMPFilter.config = config.purify;
       ZMPFilter.filterFeed();
     }
 
-    // 会员设置
-    if (config.member) {
-      ZMPMember.config = config.member;
-      document.body.classList.toggle('zmp-no-disturb', config.member.noDisturbReading);
-      document.body.classList.toggle('zmp-fullscreen-reading', config.member.fullscreenReading);
-      document.body.classList.toggle('zmp-hide-trial-cutoff', config.member.hideTrialCutoff);
-      document.body.classList.toggle('zmp-hide-upgrade', config.member.hideUpgradePopup);
-    }
-
-    // 性能设置
-    if (config.performance) {
-      ZMPPerformance.config = config.performance;
-      document.body.classList.toggle('zmp-no-animations', config.performance.disableAnimations);
-      document.body.classList.toggle('zmp-thumbnail', config.performance.thumbnailMode);
-    }
-
-    // UI增强设置
+    // 5. UI 增强：自定义宽度 + 主题
     if (config.uiEnhance) {
-      ZMPUIEnhance.config = config.uiEnhance;
-      document.body.classList.toggle('zmp-widescreen', config.uiEnhance.widescreen);
-      // 自定义宽度
       const width = config.uiEnhance.contentWidth || 1000;
       document.body.style.setProperty('--zmp-content-width', width + 'px');
-      // 主题切换
-      const themes = ['default', 'weread', 'jianshu', 'medium', 'eyegreen', 'parchment', 'academic', 'modern', 'darkzen', 'oled'];
-      themes.forEach(t => document.body.classList.remove('zmp-theme-' + t));
-      const theme = config.uiEnhance.theme || 'default';
-      document.body.classList.add('zmp-theme-' + theme);
+      this.applyTheme(config.uiEnhance.theme);
     }
+  },
+
+  /**
+   * 切换美化主题（先清除所有主题类，再添加目标主题）
+   */
+  applyTheme(theme) {
+    ZMPUtils.THEMES.forEach(t => document.body.classList.remove('zmp-theme-' + t));
+    document.body.classList.add('zmp-theme-' + (theme || 'default'));
   },
 
   /**
@@ -142,16 +143,14 @@ const ZMPMain = {
   listenMessages() {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       switch (message.action) {
-        case 'toggleImmersive': {
-          const immersiveState = ZMPReader.toggleImmersive();
-          sendResponse({ active: immersiveState });
+        case 'toggleImmersive':
+          sendResponse({ active: ZMPReader.toggleImmersive() });
           return false;
-        }
-        case 'toggleNightMode': {
-          const nightState = ZMPReader.toggleNightMode();
-          sendResponse({ active: nightState });
+
+        case 'toggleNightMode':
+          sendResponse({ active: ZMPReader.toggleNightMode() });
           return false;
-        }
+
         case 'updateReaderStyle':
           ZMPReader.updateStyle(message.key, message.value);
           sendResponse({ success: true });
@@ -162,7 +161,7 @@ const ZMPMain = {
             url: window.location.href,
             title: document.title,
             isMember: ZMPMember.isMember,
-            hasContent: !!document.querySelector('.Post-RichTextContainer, .RichContent-inner')
+            hasContent: !!document.querySelector(ZMPUtils.SELECTORS.RICH_CONTENT),
           });
           return false;
 
@@ -177,11 +176,10 @@ const ZMPMain = {
           return false;
 
         default:
-          // 不处理的消息（如throttle），交给其他监听器
           return false;
       }
     });
-  }
+  },
 };
 
 // 页面加载完成后启动

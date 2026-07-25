@@ -6,6 +6,7 @@ const ZMPUIEnhance = {
   config: null,
   debugPanel: null,
   debugLogs: [],
+  _debugInterval: null,
 
   async init(config) {
     this.config = config.uiEnhance || {};
@@ -26,7 +27,6 @@ const ZMPUIEnhance = {
     btn.innerHTML = 'Z';
     btn.title = '知乎会员增强 - 快捷菜单';
 
-    // 悬浮菜单
     const menu = document.createElement('div');
     menu.id = 'zmp-float-menu';
     menu.className = 'zmp-float-menu-hidden';
@@ -58,8 +58,7 @@ const ZMPUIEnhance = {
       this.handleMenuAction(action);
     });
 
-    document.body.appendChild(btn);
-    document.body.appendChild(menu);
+    document.body.append(btn, menu);
   },
 
   /**
@@ -73,11 +72,12 @@ const ZMPUIEnhance = {
       case 'night':
         ZMPReader.toggleNightMode();
         break;
-      case 'toc':
+      case 'toc': {
         const toc = document.getElementById('zmp-toc-panel');
         if (toc) toc.classList.toggle('zmp-toc-hidden');
         else ZMPTools.generateTOC();
         break;
+      }
       case 'top':
         window.scrollTo({ top: 0, behavior: 'smooth' });
         break;
@@ -91,9 +91,7 @@ const ZMPUIEnhance = {
         this.toggleDebugPanel();
         break;
       case 'popup':
-        // 打开扩展popup（通过runtime获取扩展ID）
-        const url = chrome.runtime.getURL('popup/popup.html');
-        window.open(url, '_blank', 'width=420,height=600');
+        window.open(chrome.runtime.getURL('popup/popup.html'), '_blank', 'width=420,height=600');
         break;
     }
     document.getElementById('zmp-float-menu').classList.add('zmp-float-menu-hidden');
@@ -133,7 +131,6 @@ const ZMPUIEnhance = {
       ZMPStorage.updateNested('uiEnhance', 'debugPanel', false);
     };
 
-    // 定时刷新调试信息
     this.startDebugRefresh();
     this.log('调试面板已启动');
   },
@@ -158,7 +155,7 @@ const ZMPUIEnhance = {
    */
   startDebugRefresh() {
     const startTime = Date.now();
-    setInterval(() => {
+    this._debugInterval = setInterval(() => {
       const panel = document.getElementById('zmp-debug-panel');
       if (!panel || panel.style.display === 'none') return;
 
@@ -196,7 +193,7 @@ const ZMPUIEnhance = {
    * 回答字数统计 + 一键跳转尾部
    */
   addWordCount() {
-    const answers = document.querySelectorAll('.RichContent-inner, .Post-RichTextContainer');
+    const answers = document.querySelectorAll(ZMPUtils.SELECTORS.RICH_CONTENT);
     answers.forEach((answer, idx) => {
       if (answer.querySelector('.zmp-word-count')) return;
 
@@ -218,7 +215,7 @@ const ZMPUIEnhance = {
     document.querySelectorAll('.zmp-jump-end-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.dataset.idx);
-        const targets = document.querySelectorAll('.RichContent-inner, .Post-RichTextContainer');
+        const targets = document.querySelectorAll(ZMPUtils.SELECTORS.RICH_CONTENT);
         if (targets[idx]) {
           const rect = targets[idx].getBoundingClientRect();
           window.scrollBy({ top: rect.bottom - window.innerHeight + 50, behavior: 'smooth' });
@@ -234,37 +231,32 @@ const ZMPUIEnhance = {
     this.log('开始获取热门问题列表...');
 
     try {
-      // 从知乎热榜页面获取链接
-      const hotUrl = 'https://www.zhihu.com/hot';
-      const response = await fetch(hotUrl, { credentials: 'include' });
+      const response = await fetch('https://www.zhihu.com/hot', { credentials: 'include' });
       const html = await response.text();
 
-      // 解析热榜中的问题链接
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
+      const doc = new DOMParser().parseFromString(html, 'text/html');
       const links = doc.querySelectorAll('a[href*="/question/"]');
 
       const urls = [];
       const seen = new Set();
       links.forEach(a => {
-        const href = a.getAttribute('href');
-        const match = href && href.match(/\/question\/(\d+)/);
+        const match = a.getAttribute('href')?.match(/\/question\/(\d+)/);
         if (match && !seen.has(match[1])) {
           seen.add(match[1]);
           urls.push(`https://www.zhihu.com/question/${match[1]}`);
         }
       });
 
+      // 备用方案：从当前页面侧边热榜获取
       if (urls.length === 0) {
-        // 备用方案：从当前页面侧边热榜获取
-        const sideHot = document.querySelectorAll('.HotList-item a, [class*="HotItem"] a[href*="/question/"]');
-        sideHot.forEach(a => {
-          const href = a.getAttribute('href');
-          if (href && href.includes('/question/') && !seen.has(href)) {
-            seen.add(href);
-            urls.push(href.startsWith('http') ? href : `https://www.zhihu.com${href}`);
-          }
-        });
+        document.querySelectorAll('.HotList-item a, [class*="HotItem"] a[href*="/question/"]')
+          .forEach(a => {
+            const href = a.getAttribute('href');
+            if (href && href.includes('/question/') && !seen.has(href)) {
+              seen.add(href);
+              urls.push(href.startsWith('http') ? href : `https://www.zhihu.com${href}`);
+            }
+          });
       }
 
       const toOpen = urls.slice(0, 30);
@@ -276,18 +268,26 @@ const ZMPUIEnhance = {
 
       this.log(`找到 ${toOpen.length} 个热门问题，正在打开...`);
 
-      // 逐个打开（避免被浏览器拦截）
-      for (let i = 0; i < toOpen.length; i++) {
-        window.open(toOpen[i], '_blank');
-        // 间隔100ms避免被拦截
+      // 逐个打开（间隔100ms避免被浏览器拦截）
+      for (const url of toOpen) {
+        window.open(url, '_blank');
         await new Promise(r => setTimeout(r, 100));
       }
 
       this.log(`已打开 ${toOpen.length} 个热门问题`);
     } catch (e) {
       this.log('获取热门失败: ' + e.message);
-      // 备用：直接打开热榜页
       window.open('https://www.zhihu.com/hot', '_blank');
     }
-  }
+  },
+
+  /**
+   * 销毁（清除定时器）
+   */
+  destroy() {
+    if (this._debugInterval) {
+      clearInterval(this._debugInterval);
+      this._debugInterval = null;
+    }
+  },
 };

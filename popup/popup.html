@@ -41,38 +41,38 @@
         <h3>会员阅读增强</h3>
         <label class="setting-item">
           <span>自动移除付费遮挡浮层</span>
-          <input type="checkbox" id="autoRemovePaywall" checked>
+          <input type="checkbox" id="autoRemovePaywall" data-section="member" checked>
         </label>
         <label class="setting-item">
           <span>高清原图阅读</span>
-          <input type="checkbox" id="hdImages" checked>
+          <input type="checkbox" id="hdImages" data-section="member" checked>
         </label>
         <label class="setting-item">
           <span>关闭付费升级弹窗</span>
-          <input type="checkbox" id="hideUpgradePopup" checked>
+          <input type="checkbox" id="hideUpgradePopup" data-section="member" checked>
         </label>
         <label class="setting-item">
           <span>无干扰阅读模式</span>
-          <input type="checkbox" id="noDisturbReading" checked>
+          <input type="checkbox" id="noDisturbReading" data-section="member" checked>
         </label>
         <label class="setting-item">
           <span>专栏全屏阅读</span>
-          <input type="checkbox" id="fullscreenReading">
+          <input type="checkbox" id="fullscreenReading" data-section="member">
         </label>
         <label class="setting-item">
           <span>隐藏试读截断线</span>
-          <input type="checkbox" id="hideTrialCutoff" checked>
+          <input type="checkbox" id="hideTrialCutoff" data-section="member" checked>
         </label>
       </div>
       <div class="setting-group">
         <h3>页面优化</h3>
         <label class="setting-item">
           <span>隐藏全站会员推广横幅</span>
-          <input type="checkbox" id="hideMemberBanner" checked>
+          <input type="checkbox" id="hideMemberBanner" data-section="member" checked>
         </label>
         <label class="setting-item">
           <span>内容类型标签（免费/盐选/付费）</span>
-          <input type="checkbox" id="contentLabels" checked>
+          <input type="checkbox" id="contentLabels" data-section="member" checked>
         </label>
       </div>
       <div class="setting-group">
@@ -121,26 +121,26 @@
         <h3>阅读模式</h3>
         <label class="setting-item">
           <span>沉浸式阅读（隐藏侧边栏）</span>
-          <input type="checkbox" id="immersiveMode">
+          <input type="checkbox" id="immersiveMode" data-section="reader">
         </label>
         <label class="setting-item">
           <span>夜间模式</span>
-          <input type="checkbox" id="nightMode">
+          <input type="checkbox" id="nightMode" data-section="reader">
         </label>
         <label class="setting-item">
           <span>长文分页（替代无尽滚动）</span>
-          <input type="checkbox" id="pagination">
+          <input type="checkbox" id="pagination" data-section="reader">
         </label>
       </div>
       <div class="setting-group">
         <h3>效率工具</h3>
         <label class="setting-item">
           <span>阅读进度记忆</span>
-          <input type="checkbox" id="readingProgress" checked>
+          <input type="checkbox" id="readingProgress" data-section="tools" checked>
         </label>
         <label class="setting-item">
           <span>自动生成文章目录</span>
-          <input type="checkbox" id="tocEnabled" checked>
+          <input type="checkbox" id="tocEnabled" data-section="tools" checked>
         </label>
       </div>
     </section>
@@ -151,42 +151,42 @@
         <h3>页面净化</h3>
         <label class="setting-item">
           <span>隐藏广告推广</span>
-          <input type="checkbox" id="hideAds" checked>
+          <input type="checkbox" id="hideAds" data-section="purify" checked>
         </label>
         <label class="setting-item">
           <span>隐藏直播推送</span>
-          <input type="checkbox" id="hideLiveStream" checked>
+          <input type="checkbox" id="hideLiveStream" data-section="purify" checked>
         </label>
         <label class="setting-item">
           <span>隐藏课程/电子书广告</span>
-          <input type="checkbox" id="hideCourseAds" checked>
+          <input type="checkbox" id="hideCourseAds" data-section="purify" checked>
         </label>
         <label class="setting-item">
           <span>隐藏带货商品卡片</span>
-          <input type="checkbox" id="hideGoodsCards" checked>
+          <input type="checkbox" id="hideGoodsCards" data-section="purify" checked>
         </label>
         <label class="setting-item">
           <span>隐藏付费咨询卡片</span>
-          <input type="checkbox" id="hideConsultCards" checked>
+          <input type="checkbox" id="hideConsultCards" data-section="purify" checked>
         </label>
         <label class="setting-item">
           <span>拦截付费/推销弹窗</span>
-          <input type="checkbox" id="hideMemberPromo" checked>
+          <input type="checkbox" id="hideMemberPromo" data-section="purify" checked>
         </label>
       </div>
       <div class="setting-group">
         <h3>评论区优化</h3>
         <label class="setting-item">
           <span>折叠低质短评</span>
-          <input type="checkbox" id="foldShortComments" checked>
+          <input type="checkbox" id="foldShortComments" data-section="purify" checked>
         </label>
         <label class="setting-item">
           <span>折叠广告评论</span>
-          <input type="checkbox" id="foldAdComments" checked>
+          <input type="checkbox" id="foldAdComments" data-section="purify" checked>
         </label>
         <label class="setting-item">
           <span>搜索结果过滤软文</span>
-          <input type="checkbox" id="searchFilter" checked>
+          <input type="checkbox" id="searchFilter" data-section="purify" checked>
         </label>
       </div>
       <div class="setting-group">
@@ -208,34 +208,34 @@
         <h3>资源节流</h3>
         <label class="setting-item">
           <span>闲置标签页自动节流</span>
-          <input type="checkbox" id="throttleIdle" checked>
+          <input type="checkbox" id="throttleIdle" data-section="performance" checked>
         </label>
         <label class="setting-item">
           <span>图片智能懒加载</span>
-          <input type="checkbox" id="lazyLoadImages" checked>
+          <input type="checkbox" id="lazyLoadImages" data-section="performance" checked>
         </label>
         <label class="setting-item">
           <span>禁用视频自动播放</span>
-          <input type="checkbox" id="disableAutoplay" checked>
+          <input type="checkbox" id="disableAutoplay" data-section="performance" checked>
         </label>
         <label class="setting-item">
           <span>关闭页面预加载</span>
-          <input type="checkbox" id="disablePrefetch" checked>
+          <input type="checkbox" id="disablePrefetch" data-section="performance" checked>
         </label>
         <label class="setting-item">
           <span>定时清理闲置DOM</span>
-          <input type="checkbox" id="cleanDOM" checked>
+          <input type="checkbox" id="cleanDOM" data-section="performance" checked>
         </label>
       </div>
       <div class="setting-group">
         <h3>渲染优化</h3>
         <label class="setting-item">
           <span>禁用页面动画效果</span>
-          <input type="checkbox" id="disableAnimations">
+          <input type="checkbox" id="disableAnimations" data-section="performance">
         </label>
         <label class="setting-item">
           <span>大图缩略图模式（点击加载原图）</span>
-          <input type="checkbox" id="thumbnailMode">
+          <input type="checkbox" id="thumbnailMode" data-section="performance">
         </label>
       </div>
       <div class="setting-group">
@@ -249,7 +249,7 @@
         <h3>UI增强</h3>
         <label class="setting-item">
           <span>宽屏适配（减少左右空白）</span>
-          <input type="checkbox" id="widescreen" checked>
+          <input type="checkbox" id="widescreen" data-section="uiEnhance" checked>
         </label>
         <div class="setting-row">
           <span>内容宽度：<em id="contentWidthVal">1000</em>px</span>
@@ -272,15 +272,15 @@
         </div>
         <label class="setting-item">
           <span>悬浮快捷按钮</span>
-          <input type="checkbox" id="floatingButton" checked>
+          <input type="checkbox" id="floatingButton" data-section="uiEnhance" checked>
         </label>
         <label class="setting-item">
           <span>调试浮窗</span>
-          <input type="checkbox" id="debugPanel">
+          <input type="checkbox" id="debugPanel" data-section="uiEnhance">
         </label>
         <label class="setting-item">
           <span>回答字数统计+跳转尾部</span>
-          <input type="checkbox" id="wordCount" checked>
+          <input type="checkbox" id="wordCount" data-section="uiEnhance" checked>
         </label>
       </div>
     </section>
@@ -291,6 +291,7 @@
     </footer>
   </div>
 
+  <script src="../utils/helpers.js"></script>
   <script src="../utils/storage.js"></script>
   <script src="popup.js"></script>
 </body>

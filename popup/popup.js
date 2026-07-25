@@ -2,21 +2,9 @@
  * 知乎盐选会员增强助手 - Popup弹窗交互逻辑
  */
 
-// 防抖工具函数
-function debounce(fn, delay) {
-  let timer = null;
-  return function(...args) {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => { fn.apply(this, args); timer = null; }, delay);
-  };
-}
-
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // 加载配置
     const config = await ZMPStorage.getAll();
-
-    // 初始化界面
     initTabs();
     initMemberStatus();
     initQuickActions();
@@ -53,7 +41,6 @@ async function initMemberStatus() {
   const statusText = document.getElementById('statusText');
 
   try {
-    // 尝试从当前标签页获取会员状态
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab && tab.url && tab.url.includes('zhihu.com')) {
       const response = await chrome.tabs.sendMessage(tab.id, { action: 'getPageInfo' });
@@ -85,16 +72,12 @@ function initQuickActions() {
 
   btnImmersive.addEventListener('click', async () => {
     const result = await sendToTab({ action: 'toggleImmersive' });
-    if (result) {
-      btnImmersive.classList.toggle('active', result.active);
-    }
+    if (result) btnImmersive.classList.toggle('active', result.active);
   });
 
   btnNight.addEventListener('click', async () => {
     const result = await sendToTab({ action: 'toggleNightMode' });
-    if (result) {
-      btnNight.classList.toggle('active', result.active);
-    }
+    if (result) btnNight.classList.toggle('active', result.active);
   });
 
   btnExportMd.addEventListener('click', async () => {
@@ -110,76 +93,42 @@ function initQuickActions() {
 
 /**
  * 加载设置到界面
+ * checkbox 通过 data-section 属性自动映射到配置段
+ * select / range / textarea 显式设置
  */
 function loadSettings(config) {
-  // 会员设置
-  setChecked('autoRemovePaywall', config.member.autoRemovePaywall);
-  setChecked('hdImages', config.member.hdImages);
-  setChecked('hideUpgradePopup', config.member.hideUpgradePopup);
-  setChecked('noDisturbReading', config.member.noDisturbReading);
-  setChecked('fullscreenReading', config.member.fullscreenReading);
-  setChecked('hideTrialCutoff', config.member.hideTrialCutoff);
-  setChecked('hideMemberBanner', config.member.hideMemberBanner);
-  setChecked('contentLabels', config.member.contentLabels);
+  // checkbox：通过 data-section 属性自动加载
+  document.querySelectorAll('input[type="checkbox"][data-section]').forEach(cb => {
+    const section = config[cb.dataset.section];
+    if (section) cb.checked = !!section[cb.id];
+  });
 
-  // 阅读设置
+  // select / range
   setValue('fontFamily', config.reader.fontFamily);
   setValue('fontSize', config.reader.fontSize);
   setValue('lineHeight', config.reader.lineHeight);
   setValue('bgColor', config.reader.bgColor);
-  setChecked('immersiveMode', config.reader.immersiveMode);
-  setChecked('nightMode', config.reader.nightMode);
-  setChecked('pagination', config.reader.pagination);
-  setChecked('readingProgress', config.tools.readingProgress);
-  setChecked('tocEnabled', config.tools.tocEnabled);
+  setValue('throttleDelay', config.performance.throttleDelay);
+  setValue('contentWidth', config.uiEnhance.contentWidth || 1000);
+  setValue('theme', config.uiEnhance.theme || 'default');
 
-  // 显示滑块值
+  // 滑块实时显示值
   document.getElementById('fontSizeVal').textContent = config.reader.fontSize;
   document.getElementById('lineHeightVal').textContent = config.reader.lineHeight;
+  document.getElementById('throttleDelayVal').textContent = Math.round(config.performance.throttleDelay / 60);
+  document.getElementById('contentWidthVal').textContent = config.uiEnhance.contentWidth || 1000;
 
-  // 屏蔽净化
-  setChecked('hideAds', config.purify.hideAds);
-  setChecked('hideLiveStream', config.purify.hideLiveStream);
-  setChecked('hideCourseAds', config.purify.hideCourseAds);
-  setChecked('hideGoodsCards', config.purify.hideGoodsCards);
-  setChecked('hideConsultCards', config.purify.hideConsultCards);
-  setChecked('hideMemberPromo', config.purify.hideMemberPromo);
-  setChecked('foldShortComments', config.purify.foldShortComments);
-  setChecked('foldAdComments', config.purify.foldAdComments);
-  setChecked('searchFilter', config.purify.searchFilter);
-
-  // 黑名单
+  // 黑名单 textarea
   document.getElementById('blockKeywords').value = (config.purify.blockKeywords || []).join('\n');
   document.getElementById('blockAuthors').value = (config.purify.blockAuthors || []).join('\n');
-
-  // 性能设置
-  setChecked('throttleIdle', config.performance.throttleIdle);
-  setChecked('lazyLoadImages', config.performance.lazyLoadImages);
-  setChecked('disableAutoplay', config.performance.disableAutoplay);
-  setChecked('disablePrefetch', config.performance.disablePrefetch);
-  setChecked('cleanDOM', config.performance.cleanDOM);
-  setChecked('disableAnimations', config.performance.disableAnimations);
-  setChecked('thumbnailMode', config.performance.thumbnailMode);
-  setValue('throttleDelay', config.performance.throttleDelay);
-  document.getElementById('throttleDelayVal').textContent = Math.round(config.performance.throttleDelay / 60);
-
-  // UI增强
-  const ui = config.uiEnhance || {};
-  setChecked('widescreen', ui.widescreen);
-  setValue('contentWidth', ui.contentWidth || 1000);
-  document.getElementById('contentWidthVal').textContent = ui.contentWidth || 1000;
-  setValue('theme', ui.theme || 'default');
-  setChecked('floatingButton', ui.floatingButton);
-  setChecked('debugPanel', ui.debugPanel);
-  setChecked('wordCount', ui.wordCount);
 }
 
 /**
  * 绑定事件
  */
 function bindEvents() {
-  // 所有checkbox变更自动保存
-  document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+  // checkbox：通过 data-section 自动保存
+  document.querySelectorAll('input[type="checkbox"][data-section]').forEach(cb => {
     cb.addEventListener('change', () => saveCheckboxSetting(cb));
   });
 
@@ -189,8 +138,8 @@ function bindEvents() {
     sendToTab({ action: 'updateReaderStyle', key: 'fontFamily', value: e.target.value });
   });
 
-  // 字号滑块（防抖保存，避免频繁写storage）
-  const saveFontSize = debounce(async (val) => {
+  // 字号滑块（防抖保存）
+  const saveFontSize = ZMPUtils.debounce(async (val) => {
     await ZMPStorage.updateNested('reader', 'fontSize', val);
     sendToTab({ action: 'updateReaderStyle', key: 'fontSize', value: val });
   }, 300);
@@ -201,7 +150,7 @@ function bindEvents() {
   });
 
   // 行距滑块（防抖保存）
-  const saveLineHeight = debounce(async (val) => {
+  const saveLineHeight = ZMPUtils.debounce(async (val) => {
     await ZMPStorage.updateNested('reader', 'lineHeight', val);
     sendToTab({ action: 'updateReaderStyle', key: 'lineHeight', value: val });
   }, 300);
@@ -218,7 +167,7 @@ function bindEvents() {
   });
 
   // 节流延迟（防抖保存）
-  const saveThrottleDelay = debounce(async (val) => {
+  const saveThrottleDelay = ZMPUtils.debounce(async (val) => {
     await ZMPStorage.updateNested('performance', 'throttleDelay', val);
   }, 400);
   document.getElementById('throttleDelay').addEventListener('input', (e) => {
@@ -228,7 +177,7 @@ function bindEvents() {
   });
 
   // 内容宽度（防抖保存）
-  const saveWidth = debounce(async (val) => {
+  const saveWidth = ZMPUtils.debounce(async (val) => {
     await ZMPStorage.updateNested('uiEnhance', 'contentWidth', val);
     sendToTab({ action: 'refreshModules' });
   }, 300);
@@ -247,44 +196,19 @@ function bindEvents() {
   // 保存黑名单
   document.getElementById('btnSaveBlocklist').addEventListener('click', saveBlocklist);
 
-  // 导出配置
+  // 导出/导入配置
   document.getElementById('btnExportConfig').addEventListener('click', exportConfig);
-
-  // 导入配置
   document.getElementById('btnImportConfig').addEventListener('click', importConfig);
 }
 
 /**
- * 保存checkbox设置
+ * 保存 checkbox 设置（通过 data-section 属性映射配置段）
  */
 async function saveCheckboxSetting(cb) {
-  const id = cb.id;
-  const checked = cb.checked;
-
-  // 映射到对应配置分类
-  const memberKeys = ['autoRemovePaywall', 'hdImages', 'hideUpgradePopup', 'noDisturbReading',
-    'fullscreenReading', 'hideTrialCutoff', 'hideMemberBanner', 'contentLabels'];
-  const readerKeys = ['immersiveMode', 'nightMode', 'pagination'];
-  const purifyKeys = ['hideAds', 'hideLiveStream', 'hideCourseAds', 'hideGoodsCards',
-    'hideConsultCards', 'hideMemberPromo', 'foldShortComments', 'foldAdComments', 'searchFilter'];
-  const perfKeys = ['throttleIdle', 'lazyLoadImages', 'disableAutoplay', 'disablePrefetch',
-    'cleanDOM', 'disableAnimations', 'thumbnailMode'];
-  const toolKeys = ['readingProgress', 'tocEnabled'];
-  const uiKeys = ['widescreen', 'floatingButton', 'debugPanel', 'wordCount'];
-
-  let section = '';
-  if (memberKeys.includes(id)) section = 'member';
-  else if (readerKeys.includes(id)) section = 'reader';
-  else if (purifyKeys.includes(id)) section = 'purify';
-  else if (perfKeys.includes(id)) section = 'performance';
-  else if (toolKeys.includes(id)) section = 'tools';
-  else if (uiKeys.includes(id)) section = 'uiEnhance';
-
-  if (section) {
-    await ZMPStorage.updateNested(section, id, checked);
-    // 通知content script刷新
-    sendToTab({ action: 'refreshModules' });
-  }
+  const section = cb.dataset.section;
+  if (!section) return;
+  await ZMPStorage.updateNested(section, cb.id, cb.checked);
+  sendToTab({ action: 'refreshModules' });
 }
 
 /**
@@ -292,9 +216,9 @@ async function saveCheckboxSetting(cb) {
  */
 async function saveBlocklist() {
   const keywords = document.getElementById('blockKeywords').value
-    .split('\n').map(s => s.trim()).filter(s => s);
+    .split('\n').map(s => s.trim()).filter(Boolean);
   const authors = document.getElementById('blockAuthors').value
-    .split('\n').map(s => s.trim()).filter(s => s);
+    .split('\n').map(s => s.trim()).filter(Boolean);
 
   await ZMPStorage.updateSection('purify', { blockKeywords: keywords, blockAuthors: authors });
   sendToTab({ action: 'refreshModules' });
@@ -369,15 +293,7 @@ async function sendToTab(message) {
 }
 
 /**
- * 设置checkbox状态
- */
-function setChecked(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.checked = !!value;
-}
-
-/**
- * 设置input/select值
+ * 设置 input/select 值
  */
 function setValue(id, value) {
   const el = document.getElementById(id);
