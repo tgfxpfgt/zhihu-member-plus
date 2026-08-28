@@ -10,7 +10,7 @@
     <!-- 头部 -->
     <header class="popup-header">
       <h1>知乎盐选会员增强</h1>
-      <span class="version">v1.0</span>
+      <span class="version">v1.1</span>
     </header>
 
     <!-- 会员状态栏 -->
@@ -32,6 +32,7 @@
       <button class="tab-btn active" data-tab="member">盐选会员</button>
       <button class="tab-btn" data-tab="reader">阅读设置</button>
       <button class="tab-btn" data-tab="purify">屏蔽净化</button>
+      <button class="tab-btn" data-tab="enhance">效率增强</button>
       <button class="tab-btn" data-tab="performance">性能节流</button>
     </nav>
 
@@ -198,6 +199,61 @@
           <button class="small-btn" id="btnSaveBlocklist">保存黑名单</button>
           <button class="small-btn" id="btnExportConfig">导出配置</button>
           <button class="small-btn" id="btnImportConfig">导入配置</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 效率增强 -->
+    <section class="tab-panel" id="panel-enhance">
+      <div class="setting-group">
+        <h3>浏览增强</h3>
+        <label class="setting-item">
+          <span>站外链接直链还原（免跳转）</span>
+          <input type="checkbox" id="directLinks" data-section="enhance" checked>
+        </label>
+        <label class="setting-item">
+          <span>完整显示发布时间并置顶</span>
+          <input type="checkbox" id="showFullTime" data-section="enhance" checked>
+        </label>
+        <label class="setting-item">
+          <span>代码块一键复制按钮</span>
+          <input type="checkbox" id="codeCopyButton" data-section="enhance" checked>
+        </label>
+        <label class="setting-item">
+          <span>一键收起全部回答（问题页）</span>
+          <input type="checkbox" id="collapseAllButton" data-section="enhance" checked>
+        </label>
+        <label class="setting-item">
+          <span>自动关闭登录弹窗</span>
+          <input type="checkbox" id="removeLoginPopup" data-section="enhance" checked>
+        </label>
+      </div>
+      <div class="setting-group">
+        <h3>屏蔽增强</h3>
+        <label class="setting-item">
+          <span>屏蔽视频/视频回答</span>
+          <input type="checkbox" id="hideVideo" data-section="purify">
+        </label>
+        <label class="setting-item">
+          <span>屏蔽低赞回答/文章</span>
+          <input type="checkbox" id="hideLowLike" data-section="purify">
+        </label>
+        <div class="setting-row">
+          <span>低赞阈值：赞同低于 <em id="lowLikeThresholdVal">10</em> 屏蔽</span>
+          <input type="range" id="lowLikeThreshold" min="1" max="100" step="1" value="10">
+        </div>
+      </div>
+      <div class="setting-group">
+        <h3>键盘快捷键</h3>
+        <label class="setting-item">
+          <span>启用快捷键</span>
+          <input type="checkbox" id="shortcuts" data-section="uiEnhance" checked>
+        </label>
+        <div class="shortcut-list">
+          <span><kbd>Alt</kbd>+<kbd>Z</kbd> 悬浮菜单</span>
+          <span><kbd>Alt</kbd>+<kbd>T</kbd> 文章目录</span>
+          <span><kbd>Alt</kbd>+<kbd>N</kbd> 夜间模式</span>
+          <span><kbd>Alt</kbd>+<kbd>I</kbd> 沉浸阅读</span>
         </div>
       </div>
     </section>

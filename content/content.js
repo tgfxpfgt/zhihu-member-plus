@@ -15,6 +15,7 @@ const CLASS_TOGGLES = [
   { section: 'purify', key: 'hideGoodsCards',   cls: 'zmp-hide-goods' },
   { section: 'purify', key: 'hideConsultCards', cls: 'zmp-hide-consult' },
   { section: 'purify', key: 'hideMemberPromo',  cls: 'zmp-hide-member-promo' },
+  { section: 'purify', key: 'hideVideo',        cls: 'zmp-hide-video' },
   // member
   { section: 'member', key: 'noDisturbReading', cls: 'zmp-no-disturb' },
   { section: 'member', key: 'fullscreenReading', cls: 'zmp-fullscreen-reading' },
@@ -70,7 +71,7 @@ const ZMPMain = {
   /** 按初始化顺序排列的模块列表 */
   get MODULES() {
     return [ZMPMember, ZMPReader, ZMPPurify, ZMPComments, ZMPFilter,
-            ZMPPerformance, ZMPTools, ZMPUIEnhance];
+            ZMPPerformance, ZMPTools, ZMPEnhance, ZMPUIEnhance];
   },
 
   /**

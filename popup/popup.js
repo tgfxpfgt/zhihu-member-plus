@@ -111,12 +111,14 @@ function loadSettings(config) {
   setValue('throttleDelay', config.performance.throttleDelay);
   setValue('contentWidth', config.uiEnhance.contentWidth || 1000);
   setValue('theme', config.uiEnhance.theme || 'default');
+  setValue('lowLikeThreshold', config.purify.lowLikeThreshold || 10);
 
   // 滑块实时显示值
   document.getElementById('fontSizeVal').textContent = config.reader.fontSize;
   document.getElementById('lineHeightVal').textContent = config.reader.lineHeight;
   document.getElementById('throttleDelayVal').textContent = Math.round(config.performance.throttleDelay / 60);
   document.getElementById('contentWidthVal').textContent = config.uiEnhance.contentWidth || 1000;
+  document.getElementById('lowLikeThresholdVal').textContent = config.purify.lowLikeThreshold || 10;
 
   // 黑名单 textarea
   document.getElementById('blockKeywords').value = (config.purify.blockKeywords || []).join('\n');
@@ -185,6 +187,17 @@ function bindEvents() {
     const val = parseInt(e.target.value);
     document.getElementById('contentWidthVal').textContent = val;
     saveWidth(val);
+  });
+
+  // 低赞阈值（防抖保存）
+  const saveLowLike = ZMPUtils.debounce(async (val) => {
+    await ZMPStorage.updateNested('purify', 'lowLikeThreshold', val);
+    sendToTab({ action: 'refreshModules' });
+  }, 300);
+  document.getElementById('lowLikeThreshold').addEventListener('input', (e) => {
+    const val = parseInt(e.target.value);
+    document.getElementById('lowLikeThresholdVal').textContent = val;
+    saveLowLike(val);
   });
 
   // 美化主题

@@ -44,6 +44,13 @@ const AD_CONFIG = {
 /** 弹窗拦截关键词 */
 const POPUP_KEYWORDS = ['开通', '升级', '课程', '直播', '限时', '优惠', '会员', '付费', '购买'];
 
+/** 视频/视频回答卡片选择器（配合 body.zmp-hide-video 类使用） */
+const VIDEO_SELECTORS = [
+  '.ZVideoItem', '[class*="ZVideo"]', '[class*="VideoCard"]',
+  '.ContentItem[data-zop-type="zvideo"]', '[class*="video-card"]',
+  '.SearchResult-Card[class*="Video"]',
+];
+
 /**
  * 按页面路径清理侧边栏推广内容
  * { path: 路径片段, selectors: 选择器列表, textFilter: 需要文本匹配的关键词（可选） }
@@ -76,7 +83,19 @@ const ZMPPurify = {
     this.config = config.purify;
     this.applyPurifyClasses();
     this.removeExistingAds();
+    if (this.config.hideVideo) this.hideVideoCards();
     this.observeNewAds();
+  },
+
+  /**
+   * 隐藏视频/视频回答卡片（配合 zmp-hide-video CSS 类兜底）
+   */
+  hideVideoCards() {
+    VIDEO_SELECTORS.forEach(sel => {
+      try {
+        document.querySelectorAll(sel).forEach(el => { el.style.display = 'none'; });
+      } catch (e) { /* 忽略无效选择器 */ }
+    });
   },
 
   /**

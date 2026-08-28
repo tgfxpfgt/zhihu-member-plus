@@ -8,6 +8,15 @@ const ZMPUIEnhance = {
   debugLogs: [],
   _debugInterval: null,
   _outsideClickHandler: null,
+  _keyHandler: null,
+
+  /** 快捷键映射（Alt+X 组合） */
+  SHORTCUTS: {
+    z: () => ZMPUIEnhance.toggleFloatMenu(),      // Alt+Z 开关悬浮菜单
+    t: () => ZMPUIEnhance.handleMenuAction('toc'), // Alt+T 目录
+    n: () => ZMPReader.toggleNightMode(),          // Alt+N 夜间模式
+    i: () => ZMPReader.toggleImmersive(),          // Alt+I 沉浸阅读
+  },
 
   async init(config) {
     this.config = config.uiEnhance || {};
@@ -15,6 +24,33 @@ const ZMPUIEnhance = {
     if (this.config.floatingButton !== false) this.createFloatingButton();
     if (this.config.debugPanel) this.createDebugPanel();
     if (this.config.wordCount !== false) this.addWordCount();
+    if (this.config.shortcuts !== false) this.setupShortcuts();
+  },
+
+  /**
+   * 注册键盘快捷键（输入框聚焦时不触发）
+   */
+  setupShortcuts() {
+    this._keyHandler = (e) => {
+      if (!e.altKey || e.ctrlKey || e.metaKey) return;
+      const tag = (document.activeElement?.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || document.activeElement?.isContentEditable) return;
+
+      const action = this.SHORTCUTS[e.key.toLowerCase()];
+      if (action) {
+        e.preventDefault();
+        action();
+      }
+    };
+    document.addEventListener('keydown', this._keyHandler);
+  },
+
+  /**
+   * 开关悬浮菜单
+   */
+  toggleFloatMenu() {
+    const menu = document.getElementById('zmp-float-menu');
+    if (menu) menu.classList.toggle('zmp-float-menu-hidden');
   },
 
   /**
@@ -284,6 +320,10 @@ const ZMPUIEnhance = {
     if (this._outsideClickHandler) {
       document.removeEventListener('click', this._outsideClickHandler);
       this._outsideClickHandler = null;
+    }
+    if (this._keyHandler) {
+      document.removeEventListener('keydown', this._keyHandler);
+      this._keyHandler = null;
     }
   },
 };

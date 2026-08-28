@@ -36,12 +36,23 @@ const ZMPStorage = {
       hideGoodsCards: true,
       hideMemberPromo: true,
       hideConsultCards: true,
+      hideVideo: false,
       blockKeywords: [],
       blockAuthors: [],
       foldShortComments: true,
       foldAdComments: true,
       minCommentLength: 15,
-      searchFilter: true
+      searchFilter: true,
+      hideLowLike: false,
+      lowLikeThreshold: 10
+    },
+    // 效率增强（参考成熟知乎增强项目）
+    enhance: {
+      directLinks: true,
+      showFullTime: true,
+      codeCopyButton: true,
+      collapseAllButton: true,
+      removeLoginPopup: true
     },
     // 性能节流
     performance: {
@@ -67,7 +78,8 @@ const ZMPStorage = {
       theme: 'default',
       floatingButton: true,
       debugPanel: false,
-      wordCount: true
+      wordCount: true,
+      shortcuts: true
     },
     // 阅读进度
     progress: {},

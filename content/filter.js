@@ -39,6 +39,12 @@ const ZMPFilter = {
         return;
       }
 
+      // 屏蔽低赞回答/文章
+      if (this._isLowLike(card)) {
+        card.style.display = 'none';
+        return;
+      }
+
       // 作者黑名单
       if (this._isBlockedAuthor(card)) {
         card.style.display = 'none';
@@ -51,6 +57,35 @@ const ZMPFilter = {
         return;
       }
     });
+  },
+
+  /**
+   * 检查是否为低赞内容（低于阈值则屏蔽）
+   */
+  _isLowLike(card) {
+    if (!this.config.hideLowLike) return false;
+    const threshold = this.config.lowLikeThreshold || 10;
+    const likeCount = this.getLikeCount(card);
+    // 0 表示无法解析赞数（如文章页头部），不误杀
+    return likeCount > 0 && likeCount < threshold;
+  },
+
+  /**
+   * 获取卡片赞同数（解析知乎的 VoteButton 文本，支持 "1.2 万" 格式）
+   */
+  getLikeCount(card) {
+    const voteBtn = card.querySelector('[class*="VoteButton"], button[class*="vote"], [class*="Vote"] button');
+    if (!voteBtn) return 0;
+
+    const raw = (voteBtn.textContent || '').replace(/[^\d.万亿kKwW]/g, '').trim();
+    if (!raw) return 0;
+
+    let num = parseFloat(raw);
+    if (isNaN(num)) return 0;
+    if (/万|w|W/.test(raw)) num *= 10000;
+    if (/亿/.test(raw)) num *= 100000000;
+    if (/k|K/.test(raw)) num *= 1000;
+    return Math.round(num);
   },
 
   /**
