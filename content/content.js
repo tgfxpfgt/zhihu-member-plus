@@ -27,6 +27,15 @@ const CLASS_TOGGLES = [
   { section: 'uiEnhance', key: 'widescreen', cls: 'zmp-widescreen' },
 ];
 
+/** 各模块与其配置段的对应关系（同步 config 引用用） */
+const MODULE_CONFIG_MAP = {
+  reader:      () => ZMPReader,
+  purify:      () => ZMPPurify,
+  member:      () => ZMPMember,
+  performance: () => ZMPPerformance,
+  uiEnhance:   () => ZMPUIEnhance,
+};
+
 const ZMPMain = {
   config: null,
   initialized: false,
@@ -42,19 +51,12 @@ const ZMPMain = {
       this.config = await ZMPStorage.getAll();
 
       // 按顺序初始化各模块
-      await ZMPMember.init(this.config);
-      await ZMPReader.init(this.config);
-      await ZMPPurify.init(this.config);
-      await ZMPComments.init(this.config);
-      await ZMPFilter.init(this.config);
-      await ZMPPerformance.init(this.config);
-      await ZMPTools.init(this.config);
-      await ZMPUIEnhance.init(this.config);
-
-      // 宽屏适配
-      if (this.config.uiEnhance?.widescreen) {
-        document.body.classList.add('zmp-widescreen');
+      for (const module of this.MODULES) {
+        await module.init(this.config);
       }
+
+      // 统一应用配置（CSS 类 / 阅读样式 / 主题 / 宽度 / 过滤）
+      this.applyConfigChanges();
 
       this.listenConfigChanges();
       this.listenMessages();
@@ -63,6 +65,12 @@ const ZMPMain = {
     } catch (e) {
       console.error('[ZMP] 初始化失败', e);
     }
+  },
+
+  /** 按初始化顺序排列的模块列表 */
+  get MODULES() {
+    return [ZMPMember, ZMPReader, ZMPPurify, ZMPComments, ZMPFilter,
+            ZMPPerformance, ZMPTools, ZMPUIEnhance];
   },
 
   /**
@@ -83,22 +91,18 @@ const ZMPMain = {
   },
 
   /**
-   * 应用配置变更
-   * 通过 CLASS_TOGGLES 映射表批量切换 CSS 类，避免手写重复逻辑
+   * 应用配置变更（初始化和配置变更共用同一入口）
+   * 1. 同步各模块 config 引用
+   * 2. 按 CLASS_TOGGLES 映射表批量切换 CSS 类
+   * 3. 阅读器样式 / 信息流过滤 / 主题 / 内容宽度
    */
   applyConfigChanges() {
     const config = this.config;
 
     // 1. 同步各模块的 config 引用
-    const moduleConfigMap = {
-      reader: ZMPReader,
-      purify: ZMPPurify,
-      member: ZMPMember,
-      performance: ZMPPerformance,
-      uiEnhance: ZMPUIEnhance,
-    };
-    for (const [section, module] of Object.entries(moduleConfigMap)) {
-      if (config[section]) module.config = config[section];
+    for (const [section, getModule] of Object.entries(MODULE_CONFIG_MAP)) {
+      const module = getModule();
+      if (config[section] && module) module.config = config[section];
     }
 
     // 2. 批量切换 CSS 类（数据驱动）
@@ -108,7 +112,7 @@ const ZMPMain = {
       }
     }
 
-    // 3. 阅读器：沉浸式 + 夜间模式（需要 class 而非 toggle 值）
+    // 3. 阅读器：刷新样式 + 沉浸式/夜间模式类
     if (config.reader) {
       ZMPReader.applyReadingStyle();
       ZMPUtils.toggleBodyClass('zmp-immersive', config.reader.immersiveMode);
@@ -138,46 +142,58 @@ const ZMPMain = {
   },
 
   /**
-   * 监听来自popup的消息
+   * 监听来自popup的消息（映射表驱动）
+   * handler 返回 true 表示异步响应
    */
   listenMessages() {
+    const handlers = {
+      toggleImmersive: (_msg, _sender, sendResponse) => {
+        sendResponse({ active: ZMPReader.toggleImmersive() });
+        return false;
+      },
+      toggleNightMode: (_msg, _sender, sendResponse) => {
+        sendResponse({ active: ZMPReader.toggleNightMode() });
+        return false;
+      },
+      toggleToc: (_msg, _sender, sendResponse) => {
+        const toc = document.getElementById('zmp-toc-panel');
+        if (toc) {
+          toc.classList.toggle('zmp-toc-hidden');
+        } else {
+          ZMPTools.generateTOC();
+        }
+        sendResponse({ success: true });
+        return false;
+      },
+      updateReaderStyle: (msg, _sender, sendResponse) => {
+        ZMPReader.updateStyle(msg.key, msg.value);
+        sendResponse({ success: true });
+        return false;
+      },
+      getPageInfo: (_msg, _sender, sendResponse) => {
+        sendResponse({
+          url: window.location.href,
+          title: document.title,
+          isMember: ZMPMember.isMember,
+          hasContent: !!document.querySelector(ZMPUtils.SELECTORS.RICH_CONTENT),
+        });
+        return false;
+      },
+      exportContent: (msg, _sender, sendResponse) => {
+        ZMPTools.exportContent(msg.type || 'markdown');
+        sendResponse({ success: true });
+        return false;
+      },
+      refreshModules: (_msg, _sender, sendResponse) => {
+        this.applyConfigChanges();
+        sendResponse({ success: true });
+        return false;
+      },
+    };
+
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      switch (message.action) {
-        case 'toggleImmersive':
-          sendResponse({ active: ZMPReader.toggleImmersive() });
-          return false;
-
-        case 'toggleNightMode':
-          sendResponse({ active: ZMPReader.toggleNightMode() });
-          return false;
-
-        case 'updateReaderStyle':
-          ZMPReader.updateStyle(message.key, message.value);
-          sendResponse({ success: true });
-          return false;
-
-        case 'getPageInfo':
-          sendResponse({
-            url: window.location.href,
-            title: document.title,
-            isMember: ZMPMember.isMember,
-            hasContent: !!document.querySelector(ZMPUtils.SELECTORS.RICH_CONTENT),
-          });
-          return false;
-
-        case 'exportContent':
-          ZMPTools.exportContent(message.type || 'markdown');
-          sendResponse({ success: true });
-          return false;
-
-        case 'refreshModules':
-          this.applyConfigChanges();
-          sendResponse({ success: true });
-          return false;
-
-        default:
-          return false;
-      }
+      const handler = handlers[message.action];
+      return handler ? handler(message, sender, sendResponse) : false;
     });
   },
 };

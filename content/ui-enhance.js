@@ -7,6 +7,7 @@ const ZMPUIEnhance = {
   debugPanel: null,
   debugLogs: [],
   _debugInterval: null,
+  _outsideClickHandler: null,
 
   async init(config) {
     this.config = config.uiEnhance || {};
@@ -47,9 +48,11 @@ const ZMPUIEnhance = {
       menu.classList.toggle('zmp-float-menu-hidden');
     });
 
-    document.addEventListener('click', () => {
+    // 点击页面其他区域关闭菜单（存储引用以便销毁）
+    this._outsideClickHandler = () => {
       menu.classList.add('zmp-float-menu-hidden');
-    });
+    };
+    document.addEventListener('click', this._outsideClickHandler);
 
     menu.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -62,37 +65,30 @@ const ZMPUIEnhance = {
   },
 
   /**
+   * 悬浮菜单动作映射表
+   */
+  MENU_ACTIONS: {
+    immersive: () => ZMPReader.toggleImmersive(),
+    night:     () => ZMPReader.toggleNightMode(),
+    top:       () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+    bottom:    () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }),
+    hot:       null, // ZMPUIEnhance.openHotQuestions（初始化后填充）
+    debug:     null, // ZMPUIEnhance.toggleDebugPanel
+    popup:     () => window.open(chrome.runtime.getURL('popup/popup.html'), '_blank', 'width=420,height=600'),
+  },
+
+  /**
    * 处理悬浮菜单操作
    */
   handleMenuAction(action) {
-    switch (action) {
-      case 'immersive':
-        ZMPReader.toggleImmersive();
-        break;
-      case 'night':
-        ZMPReader.toggleNightMode();
-        break;
-      case 'toc': {
-        const toc = document.getElementById('zmp-toc-panel');
-        if (toc) toc.classList.toggle('zmp-toc-hidden');
-        else ZMPTools.generateTOC();
-        break;
-      }
-      case 'top':
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        break;
-      case 'bottom':
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        break;
-      case 'hot':
-        this.openHotQuestions();
-        break;
-      case 'debug':
-        this.toggleDebugPanel();
-        break;
-      case 'popup':
-        window.open(chrome.runtime.getURL('popup/popup.html'), '_blank', 'width=420,height=600');
-        break;
+    if (action === 'toc') {
+      // 目录：已存在则切换显隐，否则生成
+      const toc = document.getElementById('zmp-toc-panel');
+      if (toc) toc.classList.toggle('zmp-toc-hidden');
+      else ZMPTools.generateTOC();
+    } else {
+      const fn = this.MENU_ACTIONS[action];
+      if (fn) fn();
     }
     document.getElementById('zmp-float-menu').classList.add('zmp-float-menu-hidden');
   },
@@ -191,6 +187,7 @@ const ZMPUIEnhance = {
 
   /**
    * 回答字数统计 + 一键跳转尾部
+   * 每个按钮创建时直接绑定自己的跳转事件（避免重复绑定）
    */
   addWordCount() {
     const answers = document.querySelectorAll(ZMPUtils.SELECTORS.RICH_CONTENT);
@@ -205,22 +202,17 @@ const ZMPUIEnhance = {
       bar.className = 'zmp-word-count';
       bar.innerHTML = `
         <span>📝 ${charCount.toLocaleString()} 字 · 约 ${readTime} 分钟</span>
-        <button class="zmp-jump-end-btn" data-idx="${idx}">⬇ 跳转尾部</button>
+        <button class="zmp-jump-end-btn">⬇ 跳转尾部</button>
       `;
 
-      answer.parentNode.insertBefore(bar, answer);
-    });
+      // 直接在按钮上绑定跳转（事件只绑一次）
+      const jumpBtn = bar.querySelector('.zmp-jump-end-btn');
+      jumpBtn.onclick = () => {
+        const rect = answer.getBoundingClientRect();
+        window.scrollBy({ top: rect.bottom - window.innerHeight + 50, behavior: 'smooth' });
+      };
 
-    // 绑定跳转事件
-    document.querySelectorAll('.zmp-jump-end-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const idx = parseInt(btn.dataset.idx);
-        const targets = document.querySelectorAll(ZMPUtils.SELECTORS.RICH_CONTENT);
-        if (targets[idx]) {
-          const rect = targets[idx].getBoundingClientRect();
-          window.scrollBy({ top: rect.bottom - window.innerHeight + 50, behavior: 'smooth' });
-        }
-      });
+      answer.parentNode.insertBefore(bar, answer);
     });
   },
 
@@ -282,12 +274,20 @@ const ZMPUIEnhance = {
   },
 
   /**
-   * 销毁（清除定时器）
+   * 销毁（清除定时器与监听器）
    */
   destroy() {
     if (this._debugInterval) {
       clearInterval(this._debugInterval);
       this._debugInterval = null;
     }
+    if (this._outsideClickHandler) {
+      document.removeEventListener('click', this._outsideClickHandler);
+      this._outsideClickHandler = null;
+    }
   },
 };
+
+// 菜单动作中依赖自身实例的条目（定义后填充，避免 this 绑定问题）
+ZMPUIEnhance.MENU_ACTIONS.hot = () => ZMPUIEnhance.openHotQuestions();
+ZMPUIEnhance.MENU_ACTIONS.debug = () => ZMPUIEnhance.toggleDebugPanel();

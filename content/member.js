@@ -1,6 +1,9 @@
 /**
  * 知乎盐选会员增强助手 - 会员识别与权益模块
  * 仅对已登录付费会员账号生效，不做任何破解/绕过逻辑
+ *
+ * 注意：CSS 类开关（zmp-no-disturb / zmp-hide-upgrade 等）由 content.js
+ * 的 CLASS_TOGGLES 统一管理，本模块只负责动作类逻辑（移除遮挡、标记等）。
  */
 
 /** 会员标识 DOM 选择器（命中任一即认为已登录会员） */
@@ -42,6 +45,7 @@ const ZMPMember = {
   _observer: null,
   _labelObserver: null,
   _labelTimer: null,
+  _markTimer: null,
 
   /**
    * 初始化会员模块
@@ -54,8 +58,6 @@ const ZMPMember = {
       this.applyMemberEnhancements();
     }
 
-    // 无论是否会员，都执行推广隐藏（用户配置控制）
-    this.hideMemberPromos();
     this.addContentLabels();
     this.markPurchasedContent();
   },
@@ -99,21 +101,13 @@ const ZMPMember = {
   },
 
   /**
-   * 应用会员专属增强（仅会员生效）
+   * 应用会员专属增强（仅会员生效，动作类逻辑）
    */
   applyMemberEnhancements() {
     if (this.config.autoRemovePaywall) this.removePaywallOverlay();
     if (this.config.hdImages) this.enableHDImages();
-    if (this.config.hideUpgradePopup) {
-      document.body.classList.add('zmp-hide-upgrade');
-      this.observePaywall();
-    }
-    if (this.config.noDisturbReading) document.body.classList.add('zmp-no-disturb');
-    if (this.config.fullscreenReading) document.body.classList.add('zmp-fullscreen-reading');
-    if (this.config.hideTrialCutoff) {
-      document.body.classList.add('zmp-hide-trial-cutoff');
-      this.removeTrialCutoffs();
-    }
+    if (this.config.hideUpgradePopup) this.observePaywall();
+    if (this.config.hideTrialCutoff) this.removeTrialCutoffs();
   },
 
   /**
@@ -189,15 +183,6 @@ const ZMPMember = {
   },
 
   /**
-   * 隐藏全站会员推广（所有用户生效，由配置控制）
-   */
-  hideMemberPromos() {
-    if (this.config.hideMemberBanner) {
-      document.body.classList.add('zmp-hide-member-promo');
-    }
-  },
-
-  /**
    * 添加内容类型标签（性能优化：避免读取innerHTML）
    */
   addContentLabels() {
@@ -266,14 +251,16 @@ const ZMPMember = {
       });
     };
 
-    setTimeout(markCards, 2000);
+    this._markTimer = setTimeout(markCards, 2000);
   },
 
   /**
-   * 销毁观察器
+   * 销毁观察器与定时器
    */
   destroy() {
     if (this._observer) { this._observer.disconnect(); this._observer = null; }
     if (this._labelObserver) { this._labelObserver.disconnect(); this._labelObserver = null; }
+    if (this._labelTimer) { clearTimeout(this._labelTimer); this._labelTimer = null; }
+    if (this._markTimer) { clearTimeout(this._markTimer); this._markTimer = null; }
   },
 };

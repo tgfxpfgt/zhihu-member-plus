@@ -1,19 +1,22 @@
 /**
  * 知乎盐选会员增强助手 - 性能节流模块
  * 图片懒加载、视频暂停、动画限制、DOM清理、闲置节流
+ *
+ * 注意：zmp-thumbnail / zmp-no-animations 等 CSS 类由 content.js
+ * 的 CLASS_TOGGLES 统一管理，本模块只负责动作类逻辑。
  */
 const ZMPPerformance = {
   config: null,
   isThrottled: false,
   imageObserver: null,
   domCleanTimer: null,
-  scrollListeners: [],
   _throttleHideTimer: null,
   _videoObserver: null,
   _headObserver: null,
   _thumbnailClickHandler: null,
   _visibilityHandler: null,
   _messageHandler: null,
+  _scrollHandler: null,
 
   async init(config) {
     this.config = config.performance;
@@ -21,8 +24,7 @@ const ZMPPerformance = {
     if (this.config.disableAutoplay) this.disableAllAutoplay();
     if (this.config.disablePrefetch) this.removePrefetch();
     if (this.config.lazyLoadImages) this.setupLazyLoad();
-    if (this.config.disableAnimations) this.disableAnimations();
-    if (this.config.thumbnailMode) this.enableThumbnailMode();
+    if (this.config.thumbnailMode) this.setupThumbnailClick();
     if (this.config.cleanDOM) this.startDOMCleanup();
 
     this.listenThrottleMessage();
@@ -118,24 +120,21 @@ const ZMPPerformance = {
         }
       });
     };
+    this._processImages = processImages;
 
+    // 首屏延迟处理 + 滚动时处理新进入视口下方的图片（防抖，只绑定一次）
     setTimeout(processImages, 1000);
+    if (!this._scrollHandler) {
+      this._scrollHandler = ZMPUtils.debounce(() => processImages(), 500);
+      window.addEventListener('scroll', this._scrollHandler, { passive: true });
+    }
   },
 
   /**
-   * 禁用动画
+   * 缩略图模式：点击缩略图加载原图（CSS 类由 content.js 管理）
    */
-  disableAnimations() {
-    document.body.classList.add('zmp-no-animations');
-  },
-
-  /**
-   * 缩略图模式
-   */
-  enableThumbnailMode() {
-    document.body.classList.add('zmp-thumbnail');
-
-    // 点击缩略图加载原图（存储引用以便移除）
+  setupThumbnailClick() {
+    // 存储引用以便移除
     this._thumbnailClickHandler = (e) => {
       const img = e.target;
       if (img.tagName === 'IMG' && img.closest('.zmp-thumbnail')) {
@@ -244,7 +243,10 @@ const ZMPPerformance = {
     this.isThrottled = false;
 
     // 恢复图片懒加载
-    if (this.config.lazyLoadImages) this.setupLazyLoad();
+    if (this.config.lazyLoadImages) {
+      this.setupLazyLoad();
+      if (this._processImages) this._processImages();
+    }
     document.body.style.removeProperty('animation-play-state');
 
     chrome.runtime.sendMessage({ action: 'throttleStateChange' }).catch(() => {});
@@ -272,6 +274,10 @@ const ZMPPerformance = {
     if (this._messageHandler) {
       chrome.runtime.onMessage.removeListener(this._messageHandler);
       this._messageHandler = null;
+    }
+    if (this._scrollHandler) {
+      window.removeEventListener('scroll', this._scrollHandler);
+      this._scrollHandler = null;
     }
   },
 };

@@ -87,7 +87,7 @@ function initQuickActions() {
   });
 
   btnToc.addEventListener('click', async () => {
-    await sendToTab({ action: 'refreshModules' });
+    await sendToTab({ action: 'toggleToc' });
   });
 }
 

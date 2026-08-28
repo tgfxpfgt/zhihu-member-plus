@@ -38,11 +38,12 @@ const ANSWER_TOOLBAR_BUTTONS = [
 
 const ZMPComments = {
   config: null,
+  _initTimer: null,
 
   async init(config) {
     this.config = config.purify;
     // 延迟执行，等待评论区加载
-    setTimeout(() => {
+    this._initTimer = setTimeout(() => {
       this.processComments();
       this.foldDuplicateComments();
     }, 2000);
@@ -203,5 +204,12 @@ const ZMPComments = {
         seen.add(text);
       }
     });
+  },
+
+  /**
+   * 销毁（清理延迟定时器）
+   */
+  destroy() {
+    if (this._initTimer) { clearTimeout(this._initTimer); this._initTimer = null; }
   },
 };

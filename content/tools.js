@@ -257,6 +257,14 @@ const ZMPTools = {
   },
 
   /**
+   * 获取条目唯一标识（data 属性 > id > 页面 URL）
+   */
+  getItemId(item) {
+    return item.getAttribute('data-za-detail-view-element_id') || item.id ||
+           window.location.href.split('#')[0];
+  },
+
+  /**
    * 添加本地收藏标签按钮
    */
   async addLocalTagButtons() {
@@ -270,14 +278,13 @@ const ZMPTools = {
     items.forEach(item => {
       if (item.querySelector('.zmp-tag-btn')) return;
 
+      const itemId = this.getItemId(item);
+
       const btn = ZMPUtils.createButton({ text: '+ 标签', className: 'zmp-tag-btn' });
       btn.onclick = async (e) => {
         e.stopPropagation();
         const tag = prompt('输入标签名称（如：技术、生活、待读）：');
         if (!tag || !tag.trim()) return;
-
-        const itemId = item.getAttribute('data-za-detail-view-element_id') || item.id ||
-                       window.location.href.split('#')[0];
 
         const freshConfig = await ZMPStorage.getAll();
         if (!freshConfig.tools.localTags) freshConfig.tools.localTags = {};
@@ -295,30 +302,45 @@ const ZMPTools = {
       if (footer) footer.appendChild(btn);
 
       // 渲染已有标签（使用缓存的配置）
-      const itemId = item.getAttribute('data-za-detail-view-element_id') || item.id ||
-                     window.location.href.split('#')[0];
-      (localTags[itemId] || []).forEach(tag => {
-        const tagEl = document.createElement('span');
-        tagEl.className = 'zmp-local-tag';
-        tagEl.textContent = tag;
-        item.insertBefore(tagEl, item.firstChild);
-      });
+      this.renderCachedTags(item, localTags[itemId] || []);
     });
   },
 
   /**
-   * 渲染标签
+   * 渲染一组标签元素到条目顶部
    */
-  async renderTags(item, itemId) {
-    item.querySelectorAll('.zmp-local-tag').forEach(t => t.remove());
-
-    const config = await ZMPStorage.getAll();
-    const tags = (config.tools.localTags || {})[itemId] || [];
+  _renderTagElements(item, tags) {
     tags.forEach(tag => {
       const tagEl = document.createElement('span');
       tagEl.className = 'zmp-local-tag';
       tagEl.textContent = tag;
       item.insertBefore(tagEl, item.firstChild);
     });
+  },
+
+  /** 渲染缓存的标签（init 时用） */
+  renderCachedTags(item, tags) {
+    this._renderTagElements(item, tags);
+  },
+
+  /**
+   * 渲染标签（添加标签后刷新）
+   */
+  async renderTags(item, itemId) {
+    item.querySelectorAll('.zmp-local-tag').forEach(t => t.remove());
+
+    const config = await ZMPStorage.getAll();
+    const tags = (config.tools.localTags || {})[itemId] || [];
+    this._renderTagElements(item, tags);
+  },
+
+  /**
+   * 销毁（清理滚动监听）
+   */
+  destroy() {
+    if (this.scrollHandler) {
+      window.removeEventListener('scroll', this.scrollHandler);
+      this.scrollHandler = null;
+    }
   },
 };

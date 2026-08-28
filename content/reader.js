@@ -4,6 +4,12 @@
 const ZMPReader = {
   config: null,
 
+  /** 背景色 → CSS 类 映射 */
+  BG_CLASS_MAP: {
+    green: 'zmp-bg-green',
+    dark:  'zmp-bg-dark',
+  },
+
   async init(config) {
     this.config = config.reader;
     this.applyReadingStyle();
@@ -20,19 +26,39 @@ const ZMPReader = {
   applyReadingStyle() {
     document.body.classList.add('zmp-reader-styled');
 
-    const fontFamily = ZMPUtils.FONT_MAP[this.config.fontFamily] || ZMPUtils.FONT_MAP['system'];
-
+    const fontFamily = this.resolveFont(this.config.fontFamily);
     document.body.style.setProperty('--zmp-font-family', fontFamily);
     document.body.style.setProperty('--zmp-font-size', this.config.fontSize + 'px');
     document.body.style.setProperty('--zmp-line-height', String(this.config.lineHeight));
 
-    // 背景色（先清除旧 class 再添加，防止叠加）
-    document.body.classList.remove('zmp-bg-green', 'zmp-bg-dark');
-    if (this.config.bgColor === 'green') {
-      document.body.classList.add('zmp-bg-green');
-    } else if (this.config.bgColor === 'dark') {
-      document.body.classList.add('zmp-bg-dark');
-    }
+    this.applyBgColor(this.config.bgColor);
+  },
+
+  /**
+   * 解析字体配置为 CSS 字体栈
+   */
+  resolveFont(fontFamily) {
+    return ZMPUtils.FONT_MAP[fontFamily] || ZMPUtils.FONT_MAP['system'];
+  },
+
+  /**
+   * 应用背景色（先清除旧类再添加，防止叠加）
+   */
+  applyBgColor(bgColor) {
+    Object.values(this.BG_CLASS_MAP).forEach(cls => document.body.classList.remove(cls));
+    const cls = this.BG_CLASS_MAP[bgColor];
+    if (cls) document.body.classList.add(cls);
+  },
+
+  /**
+   * 切换某个阅读模式类并持久化到配置
+   * @returns {boolean} 切换后是否激活
+   */
+  _togglePersist(cls, key) {
+    document.body.classList.toggle(cls);
+    const isActive = document.body.classList.contains(cls);
+    ZMPStorage.updateNested('reader', key, isActive);
+    return isActive;
   },
 
   /**
@@ -46,24 +72,21 @@ const ZMPReader = {
    * 切换沉浸式模式
    */
   toggleImmersive() {
-    document.body.classList.toggle('zmp-immersive');
-    const isActive = document.body.classList.contains('zmp-immersive');
-    ZMPStorage.updateNested('reader', 'immersiveMode', isActive);
-    return isActive;
+    return this._togglePersist('zmp-immersive', 'immersiveMode');
   },
 
   /**
-   * 夜间模式
+   * 应用夜间模式
    */
   applyNightMode() {
     ZMPUtils.toggleBodyClass('zmp-night-mode', this.config.nightMode);
   },
 
+  /**
+   * 切换夜间模式
+   */
   toggleNightMode() {
-    document.body.classList.toggle('zmp-night-mode');
-    const isActive = document.body.classList.contains('zmp-night-mode');
-    ZMPStorage.updateNested('reader', 'nightMode', isActive);
-    return isActive;
+    return this._togglePersist('zmp-night-mode', 'nightMode');
   },
 
   /**
@@ -92,24 +115,16 @@ const ZMPReader = {
     const pagination = document.createElement('div');
     pagination.className = 'zmp-pagination';
 
-    const prevBtn = ZMPUtils.createButton({
-      text: '上一页',
-      onClick: () => { if (currentPage > 0) showPage(currentPage - 1); },
-    });
-
     const info = document.createElement('span');
     info.style.cssText = 'padding: 6px 12px; font-size: 13px; color: #666;';
 
-    const nextBtn = ZMPUtils.createButton({
-      text: '下一页',
-      onClick: () => { if (currentPage < totalPages - 1) showPage(currentPage + 1); },
-    });
+    const updateButtons = () => {
+      info.textContent = `${currentPage + 1} / ${totalPages}`;
+      prevBtn.disabled = currentPage === 0;
+      nextBtn.disabled = currentPage === totalPages - 1;
+    };
 
-    pagination.append(prevBtn, info, nextBtn);
-    content.parentNode.insertBefore(pagination, content.nextSibling);
-
-    // 分页显示逻辑
-    function showPage(page) {
+    const showPage = (page) => {
       currentPage = page;
       const start = page * perPage;
       const end = start + perPage;
@@ -118,13 +133,19 @@ const ZMPReader = {
       });
       window.scrollTo({ top: 0, behavior: 'smooth' });
       updateButtons();
-    }
+    };
 
-    function updateButtons() {
-      info.textContent = `${currentPage + 1} / ${totalPages}`;
-      prevBtn.disabled = currentPage === 0;
-      nextBtn.disabled = currentPage === totalPages - 1;
-    }
+    const prevBtn = ZMPUtils.createButton({
+      text: '上一页',
+      onClick: () => { if (currentPage > 0) showPage(currentPage - 1); },
+    });
+    const nextBtn = ZMPUtils.createButton({
+      text: '下一页',
+      onClick: () => { if (currentPage < totalPages - 1) showPage(currentPage + 1); },
+    });
+
+    pagination.append(prevBtn, info, nextBtn);
+    content.parentNode.insertBefore(pagination, content.nextSibling);
 
     showPage(0);
   },
@@ -141,13 +162,10 @@ const ZMPReader = {
         document.body.style.setProperty('--zmp-line-height', String(value));
         break;
       case 'fontFamily':
-        document.body.style.setProperty('--zmp-font-family',
-          ZMPUtils.FONT_MAP[value] || ZMPUtils.FONT_MAP['system']);
+        document.body.style.setProperty('--zmp-font-family', this.resolveFont(value));
         break;
       case 'bgColor':
-        document.body.classList.remove('zmp-bg-green', 'zmp-bg-dark');
-        if (value === 'green') document.body.classList.add('zmp-bg-green');
-        else if (value === 'dark') document.body.classList.add('zmp-bg-dark');
+        this.applyBgColor(value);
         break;
     }
   },
