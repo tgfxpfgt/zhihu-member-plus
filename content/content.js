@@ -143,6 +143,20 @@ const ZMPMain = {
   },
 
   /**
+   * 切换目录面板显隐（已存在则切换，否则生成）
+   * @returns {boolean} 切换后目录是否可见
+   */
+  toggleTocPanel() {
+    const toc = document.getElementById('zmp-toc-panel');
+    if (toc) {
+      toc.classList.toggle('zmp-toc-hidden');
+      return !toc.classList.contains('zmp-toc-hidden');
+    }
+    ZMPTools.generateTOC();
+    return true;
+  },
+
+  /**
    * 监听来自popup的消息（映射表驱动）
    * handler 返回 true 表示异步响应
    */
@@ -157,13 +171,18 @@ const ZMPMain = {
         return false;
       },
       toggleToc: (_msg, _sender, sendResponse) => {
+        const active = this.toggleTocPanel();
+        sendResponse({ success: true, active });
+        return false;
+      },
+      /** popup 打开时同步页面端 UI 状态（快捷按钮 active 显示） */
+      getUIState: (_msg, _sender, sendResponse) => {
         const toc = document.getElementById('zmp-toc-panel');
-        if (toc) {
-          toc.classList.toggle('zmp-toc-hidden');
-        } else {
-          ZMPTools.generateTOC();
-        }
-        sendResponse({ success: true });
+        sendResponse({
+          immersive: document.body.classList.contains('zmp-immersive'),
+          night: document.body.classList.contains('zmp-night-mode'),
+          toc: !!toc && !toc.classList.contains('zmp-toc-hidden'),
+        });
         return false;
       },
       updateReaderStyle: (msg, _sender, sendResponse) => {

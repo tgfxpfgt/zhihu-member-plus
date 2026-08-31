@@ -79,7 +79,8 @@ const ZMPStorage = {
       floatingButton: true,
       debugPanel: false,
       wordCount: true,
-      shortcuts: true
+      shortcuts: true,
+      onboarded: false
     },
     // 阅读进度
     progress: {},

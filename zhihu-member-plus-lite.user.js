@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         知乎盐选会员增强助手（轻量版）
 // @namespace    https://github.com/tgfxpfgt/zhihu-member-plus
-// @version      1.1.0
+// @version      1.2.0
 // @description  知乎增强轻量版：页面净化、广告屏蔽、站外直链、时间显示、代码复制、低赞屏蔽、阅读样式、快捷键。与 Chrome 扩展版功能同步演进。
 // @author       tgfxpfgt
 // @match        https://www.zhihu.com/*
@@ -61,6 +61,9 @@
       fontSize: 0,        // 0 = 不调整
       lineHeight: 0,      // 0 = 不调整
       nightMode: false,
+    },
+    general: {
+      onboarded: false,   // 首次启动引导 toast 已显示（与扩展版 uiEnhance.onboarded 对应）
     },
   };
 
@@ -303,6 +306,44 @@
     }
     #zmp-ls-save { background: #0084ff; color: #fff; }
     #zmp-ls-close { background: #eee; color: #333; }
+
+    /* ===== 首次启动引导 toast（与扩展版 content.css 一致） ===== */
+    #zmp-onboard-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 32px;
+      transform: translateX(-50%);
+      z-index: 999999;
+      padding: 14px 22px;
+      background: rgba(20, 22, 28, 0.92);
+      color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+      cursor: pointer;
+      text-align: center;
+      max-width: 90vw;
+    }
+    #zmp-onboard-toast .zmp-toast-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    #zmp-onboard-toast .zmp-toast-desc {
+      font-size: 12px;
+      color: #c8cdd6;
+      line-height: 1.8;
+    }
+    #zmp-onboard-toast kbd {
+      display: inline-block;
+      padding: 0 5px;
+      font-size: 11px;
+      background: #2d3138;
+      border: 1px solid #4a505a;
+      border-bottom-width: 2px;
+      border-radius: 3px;
+      color: #e8eaee;
+      font-family: inherit;
+    }
   `);
 
   /* ==================== 模块：页面净化 Purify ==================== */
@@ -749,6 +790,31 @@
   GM_registerMenuCommand('⚙ 打开设置', showSettings);
   GM_registerMenuCommand('🌙 切换夜间模式', () => Reader.toggleNightMode());
 
+  /* ==================== 首次启动引导 ==================== */
+
+  /** 首次启动引导 toast（仅显示一次，点击或 8 秒后消失） */
+  function showOnboardingToast(config) {
+    if (config.general.onboarded) return;
+
+    const toast = document.createElement('div');
+    toast.id = 'zmp-onboard-toast';
+    toast.innerHTML = `
+      <div class="zmp-toast-title">✓ 知乎增强（轻量版）已激活</div>
+      <div class="zmp-toast-desc">
+        点击 Tampermonkey 图标可打开设置面板<br>
+        快捷键：<kbd>Alt</kbd>+<kbd>N</kbd> 夜间模式 · <kbd>Alt</kbd>+<kbd>S</kbd> 设置面板
+      </div>
+    `;
+    const dismiss = () => {
+      toast.remove();
+      config.general.onboarded = true;
+      saveConfig(config);
+    };
+    toast.addEventListener('click', dismiss);
+    document.body.appendChild(toast);
+    setTimeout(() => { if (toast.isConnected) dismiss(); }, 8000);
+  }
+
   /* ==================== 主入口 ==================== */
 
   const App = {
@@ -761,6 +827,7 @@
 
       this.config = loadConfig();
       this.modules.forEach(m => m.init(this.config));
+      showOnboardingToast(this.config);
       console.log('[ZMP Lite] 知乎增强（轻量版）已启动 v' + GM_info.script.version);
     },
 

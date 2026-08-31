@@ -25,6 +25,38 @@ const ZMPUIEnhance = {
     if (this.config.debugPanel) this.createDebugPanel();
     if (this.config.wordCount !== false) this.addWordCount();
     if (this.config.shortcuts !== false) this.setupShortcuts();
+    this.showOnboardingToast();
+  },
+
+  /**
+   * 首次启动引导 toast（仅显示一次，之后写入 onboarded 标记）
+   */
+  showOnboardingToast() {
+    if (this.config.onboarded) return;
+
+    const toast = document.createElement('div');
+    toast.id = 'zmp-onboard-toast';
+    toast.innerHTML = `
+      <div class="zmp-toast-title">✓ 知乎盐选会员增强已激活</div>
+      <div class="zmp-toast-desc">
+        点击右上角扩展图标可配置全部功能<br>
+        快捷键：<kbd>Alt</kbd>+<kbd>Z</kbd> 菜单 ·
+        <kbd>Alt</kbd>+<kbd>T</kbd> 目录 ·
+        <kbd>Alt</kbd>+<kbd>N</kbd> 夜间 ·
+        <kbd>Alt</kbd>+<kbd>I</kbd> 沉浸
+      </div>
+    `;
+    const dismiss = () => {
+      toast.remove();
+      ZMPStorage.updateNested('uiEnhance', 'onboarded', true);
+    };
+    toast.addEventListener('click', dismiss);
+    document.body.appendChild(toast);
+    this._onboardToast = toast;
+    // 8 秒后自动消失
+    setTimeout(() => {
+      if (toast.isConnected) dismiss();
+    }, 8000);
   },
 
   /**
@@ -324,6 +356,10 @@ const ZMPUIEnhance = {
     if (this._keyHandler) {
       document.removeEventListener('keydown', this._keyHandler);
       this._keyHandler = null;
+    }
+    if (this._onboardToast) {
+      this._onboardToast.remove();
+      this._onboardToast = null;
     }
   },
 };

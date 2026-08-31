@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadSettings(config);
     bindEvents();
     initLinkButtons();
+    restoreLastTab();
+    syncUIState();
   } catch (e) {
     console.error('[ZMP Popup] 初始化失败', e);
   }
@@ -18,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 /**
  * 标签页切换
+ * 点击后记忆所选标签，下次打开 popup 恢复（restoreLastTab）
  */
 function initTabs() {
   const tabBtns = document.querySelectorAll('.tab-btn');
@@ -29,8 +32,33 @@ function initTabs() {
       panels.forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById(`panel-${btn.dataset.tab}`).classList.add('active');
+      chrome.storage.local.set({ zmpPopupTab: btn.dataset.tab });
     });
   });
+}
+
+/**
+ * 恢复上次打开的标签页
+ */
+async function restoreLastTab() {
+  try {
+    const { zmpPopupTab } = await chrome.storage.local.get('zmpPopupTab');
+    if (!zmpPopupTab) return;
+    const btn = document.querySelector(`.tab-btn[data-tab="${zmpPopupTab}"]`);
+    if (btn) btn.click();
+  } catch (e) { /* 忽略 */ }
+}
+
+/**
+ * 打开 popup 时从页面端同步快捷按钮的 active 状态
+ * （沉浸/夜间/目录可能已通过快捷键或悬浮菜单在页面上开启）
+ */
+async function syncUIState() {
+  const state = await sendToTab({ action: 'getUIState' });
+  if (!state) return;
+  document.getElementById('btnImmersive').classList.toggle('active', !!state.immersive);
+  document.getElementById('btnNight').classList.toggle('active', !!state.night);
+  document.getElementById('btnToc').classList.toggle('active', !!state.toc);
 }
 
 /**
@@ -87,7 +115,8 @@ function initQuickActions() {
   });
 
   btnToc.addEventListener('click', async () => {
-    await sendToTab({ action: 'toggleToc' });
+    const result = await sendToTab({ action: 'toggleToc' });
+    if (result) btnToc.classList.toggle('active', !!result.active);
   });
 }
 
@@ -259,6 +288,7 @@ async function exportConfig() {
  * 导入配置
  */
 async function importConfig() {
+  const btn = document.getElementById('btnImportConfig');
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = '.json';
@@ -271,7 +301,9 @@ async function importConfig() {
       const config = await ZMPStorage.getAll();
       loadSettings(config);
       sendToTab({ action: 'refreshModules' });
-      alert('配置导入成功！');
+      // 按钮反馈替代 alert（非阻塞）
+      btn.textContent = '✓ 导入成功';
+      setTimeout(() => { btn.textContent = '导入配置'; }, 1500);
     } else {
       alert('导入失败，请检查文件格式');
     }

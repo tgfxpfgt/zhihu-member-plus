@@ -853,3 +853,152 @@ body.zmp-hide-video [class*="video-card"] {
   border-radius: 3px;
   font-family: inherit;
 }
+
+/* ========== 首次启动引导 toast ========== */
+#zmp-onboard-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  z-index: 999999;
+  padding: 14px 22px;
+  background: rgba(20, 22, 28, 0.92);
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  text-align: center;
+  animation: zmp-toast-in 0.3s ease;
+  max-width: 90vw;
+}
+#zmp-onboard-toast .zmp-toast-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+#zmp-onboard-toast .zmp-toast-desc {
+  font-size: 12px;
+  color: #c8cdd6;
+  line-height: 1.8;
+}
+#zmp-onboard-toast kbd {
+  display: inline-block;
+  padding: 0 5px;
+  font-size: 11px;
+  background: #2d3138;
+  border: 1px solid #4a505a;
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  color: #e8eaee;
+  font-family: inherit;
+}
+@keyframes zmp-toast-in {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ========== 深色主题下浅色表面适配 ==========
+ * zmp-bg-dark / zmp-theme-darkzen / zmp-theme-oled 三种深色环境下，
+ * 修正评论折叠渐变、字数统计栏、目录面板、工具栏按钮的白色背景穿帮 */
+body.zmp-bg-dark .zmp-comment-folded::after,
+body.zmp-theme-darkzen .zmp-comment-folded::after,
+body.zmp-theme-oled .zmp-comment-folded::after {
+  color: #888;
+  background: linear-gradient(transparent, #1c1f26);
+}
+body.zmp-bg-dark .zmp-word-count,
+body.zmp-theme-darkzen .zmp-word-count,
+body.zmp-theme-oled .zmp-word-count {
+  background: #23272f;
+  color: #8a919c;
+}
+body.zmp-bg-dark .zmp-jump-end-btn,
+body.zmp-theme-darkzen .zmp-jump-end-btn,
+body.zmp-theme-oled .zmp-jump-end-btn {
+  background: #2a2f38;
+  border-color: #3d434e;
+  color: #aab1bc;
+}
+body.zmp-bg-dark .zmp-jump-end-btn:hover,
+body.zmp-theme-darkzen .zmp-jump-end-btn:hover,
+body.zmp-theme-oled .zmp-jump-end-btn:hover {
+  background: #1d3a5f;
+  border-color: #2b527f;
+  color: #7cb3ff;
+}
+body.zmp-bg-dark .zmp-toc-panel,
+body.zmp-theme-darkzen .zmp-toc-panel,
+body.zmp-theme-oled .zmp-toc-panel {
+  background: #1c1f26;
+  border-color: #30363d;
+}
+body.zmp-bg-dark .zmp-toc-title,
+body.zmp-theme-darkzen .zmp-toc-title,
+body.zmp-theme-oled .zmp-toc-title {
+  color: #d0d4da;
+}
+body.zmp-bg-dark .zmp-toc-item,
+body.zmp-theme-darkzen .zmp-toc-item,
+body.zmp-theme-oled .zmp-toc-item {
+  color: #9aa1ab;
+  border-bottom-color: #262b33;
+}
+body.zmp-bg-dark .zmp-toc-item:hover,
+body.zmp-theme-darkzen .zmp-toc-item:hover,
+body.zmp-theme-oled .zmp-toc-item:hover {
+  color: #58a6ff;
+}
+body.zmp-bg-dark .zmp-answer-toolbar,
+body.zmp-theme-darkzen .zmp-answer-toolbar,
+body.zmp-theme-oled .zmp-answer-toolbar {
+  border-bottom-color: #262b33;
+}
+body.zmp-bg-dark .zmp-answer-toolbar button,
+body.zmp-theme-darkzen .zmp-answer-toolbar button,
+body.zmp-theme-oled .zmp-answer-toolbar button {
+  background: #23272f;
+  border-color: #3d434e;
+  color: #aab1bc;
+}
+body.zmp-bg-dark .zmp-answer-toolbar button:hover,
+body.zmp-theme-darkzen .zmp-answer-toolbar button:hover,
+body.zmp-theme-oled .zmp-answer-toolbar button:hover {
+  background: #1d3a5f;
+  border-color: #2b527f;
+  color: #7cb3ff;
+}
+body.zmp-bg-dark .zmp-code-copy-btn,
+body.zmp-theme-darkzen .zmp-code-copy-btn,
+body.zmp-theme-oled .zmp-code-copy-btn {
+  background: rgba(35, 39, 47, 0.92);
+  border-color: #3d434e;
+  color: #8a919c;
+}
+body.zmp-bg-dark .zmp-code-copy-btn:hover,
+body.zmp-theme-darkzen .zmp-code-copy-btn:hover,
+body.zmp-theme-oled .zmp-code-copy-btn:hover {
+  color: #7cb3ff;
+  border-color: #58a6ff;
+}
+body.zmp-bg-dark #zmp-float-menu,
+body.zmp-theme-darkzen #zmp-float-menu,
+body.zmp-theme-oled #zmp-float-menu {
+  background: #1c1f26;
+}
+body.zmp-bg-dark .zmp-fm-title,
+body.zmp-theme-darkzen .zmp-fm-title,
+body.zmp-theme-oled .zmp-fm-title {
+  color: #8a919c;
+  border-bottom-color: #262b33;
+}
+body.zmp-bg-dark .zmp-fm-btn,
+body.zmp-theme-darkzen .zmp-fm-btn,
+body.zmp-theme-oled .zmp-fm-btn {
+  color: #c8cdd6;
+}
+body.zmp-bg-dark .zmp-fm-btn:hover,
+body.zmp-theme-darkzen .zmp-fm-btn:hover,
+body.zmp-theme-oled .zmp-fm-btn:hover {
+  background: #1d3a5f;
+  color: #7cb3ff;
+}
