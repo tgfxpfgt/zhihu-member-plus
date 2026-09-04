@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "知乎盐选会员增强助手",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "知乎盐选/盐智会员专属阅读增强、页面净化、性能优化工具（仅服务已购会员账号）",
   "permissions": [
     "storage",
@@ -46,6 +46,14 @@
         "content/performance.js",
         "content/tools.js",
         "content/enhance.js",
+        "content/images.js",
+        "content/digest.js",
+        "content/selection.js",
+        "content/collection.js",
+        "content/aggregate.js",
+        "content/tts.js",
+        "content/ai-summary.js",
+        "content/stats.js",
         "content/ui-enhance.js",
         "content/content.js"
       ],

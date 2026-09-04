@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         知乎盐选会员增强助手（轻量版）
 // @namespace    https://github.com/tgfxpfgt/zhihu-member-plus
-// @version      1.2.0
-// @description  知乎增强轻量版：页面净化、广告屏蔽、站外直链、时间显示、代码复制、低赞屏蔽、阅读样式、快捷键。与 Chrome 扩展版功能同步演进。
+// @version      2.0.0
+// @description  知乎增强轻量版：页面净化、广告屏蔽、按页面分类屏蔽、站外直链、时间显示、代码复制、默认收起回答、直达问题、一句话提炼、划词屏蔽、图片预览、阅读样式、快捷键。与 Chrome 扩展版功能同步演进。
 // @author       tgfxpfgt
 // @match        https://www.zhihu.com/*
 // @match        https://zhuanlan.zhihu.com/*
@@ -26,7 +26,9 @@
  *
  * 差异说明（轻量版裁剪项）：
  * - 无性能节流模块（依赖扩展 background SW 调度）
- * - 无导出 Markdown / 阅读进度（扩展版功能更完整）
+ * - 无导出 Markdown / 阅读进度 / 收藏夹 / 统计（扩展版功能更完整）
+ * - 无 AI 总结 / TTS 听书 / 回答聚合 / 自动滚动（需要扩展 popup 与消息通道）
+ * - 划词工具仅保留"加屏蔽词"（表达本依赖扩展存储层）
  * - 设置项精简为常用开关（Tampermonkey 菜单打开设置面板）
  */
 (function () {
@@ -45,6 +47,15 @@
       hideVideo: false,
       hideLowLike: false,
       lowLikeThreshold: 10,
+      hideLowComments: false,
+      lowCommentThreshold: 3,
+      cleanSearchPage: true,
+      blockTypes: {
+        home:   { video: false, article: false, pin: false, salt: false, followActivity: true },
+        follow: { video: false, article: false, pin: false, salt: false, followActivity: true },
+        hot:    { video: false, article: false, pin: false, salt: false },
+        search: { video: false, article: false, pin: false, salt: false },
+      },
     },
     filter: {
       blockKeywords: [],
@@ -56,6 +67,21 @@
       codeCopyButton: true,
       collapseAllButton: true,
       removeLoginPopup: true,
+      openInNewTab: false,
+      collapseByDefault: false,
+      showQuestionAuthor: true,
+      directQuestionButton: true,
+      imageHoverPreview: true,
+      nightImageDim: true,
+    },
+    digest: {
+      enabled: true,
+      classify: true,
+      minWords: 500,
+    },
+    selection: {
+      blockWord: true,
+      expressionBook: false,
     },
     reader: {
       fontSize: 0,        // 0 = 不调整
@@ -344,6 +370,119 @@
       color: #e8eaee;
       font-family: inherit;
     }
+
+    /* ===== v2.0.0 新增 ===== */
+    /* 通用 toast */
+    #zmp-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 64px;
+      transform: translateX(-50%);
+      z-index: 1000000;
+      padding: 10px 18px;
+      background: rgba(20, 22, 28, 0.92);
+      color: #fff;
+      font-size: 13px;
+      border-radius: 8px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+      max-width: 80vw;
+      pointer-events: none;
+    }
+
+    /* 搜索页净化 */
+    body.zmp-clean-search .SearchSideCards,
+    body.zmp-clean-search [class*="SearchSide"] { display: none !important; }
+
+    /* 夜间模式图片调暗 */
+    body.zmp-night-mode.zmp-night-img-dim img { filter: brightness(0.75) contrast(0.95); }
+    body.zmp-night-mode.zmp-night-img-dim .zmp-img-overlay img { filter: none; }
+
+    /* 直达问题按钮 / 提问者 */
+    .zmp-direct-q {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 1px 8px;
+      font-size: 11px;
+      vertical-align: middle;
+      background: #eef4ff;
+      border: 1px solid #b6d4f5;
+      border-radius: 9px;
+      color: #2b6fd6;
+      text-decoration: none;
+    }
+    .zmp-direct-q:hover { background: #e0efff; }
+    .zmp-question-author {
+      display: inline-block;
+      margin-left: 12px;
+      font-size: 13px;
+      color: #8590a6;
+    }
+
+    /* 一句话提炼条 */
+    .zmp-digest-bar {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 7px 12px;
+      margin: 8px 0 4px;
+      background: #f7f9fc;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .zmp-digest-label { flex-shrink: 0; font-weight: 600; color: #8590a6; font-size: 12px; }
+    .zmp-digest-tag { flex-shrink: 0; font-size: 11px; padding: 1px 8px; border-radius: 9px; font-weight: 600; }
+    .zmp-digest-tag.zmp-digest-ad { color: #c0392b; background: #fdecea; }
+    .zmp-digest-tag.zmp-digest-emotion { color: #b07d1e; background: #fdf3e0; }
+    .zmp-digest-tag.zmp-digest-knowledge { color: #1e7e4a; background: #e6f6ee; }
+    .zmp-digest-tag.zmp-digest-opinion { color: #2b6fd6; background: #eef4ff; }
+    .zmp-digest-text { color: #444; flex: 1; min-width: 200px; }
+    body.zmp-night-mode .zmp-digest-bar { background: #1e222a; }
+    body.zmp-night-mode .zmp-digest-text { color: #b8bec8; }
+
+    /* 划词工具条 */
+    #zmp-sel-toolbar {
+      position: fixed;
+      display: none;
+      gap: 2px;
+      padding: 4px;
+      background: rgba(20, 22, 28, 0.94);
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      z-index: 1000000;
+    }
+    #zmp-sel-toolbar button {
+      border: none;
+      background: none;
+      color: #d8dce3;
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #zmp-sel-toolbar button:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+
+    /* 图片悬停预览 */
+    .zmp-img-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 999990;
+      cursor: zoom-out;
+    }
+    .zmp-img-overlay img {
+      max-width: 90vw;
+      max-height: 88vh;
+      border-radius: 4px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+    }
+    .zmp-img-caption { margin-top: 12px; color: rgba(255,255,255,0.55); font-size: 12px; }
   `);
 
   /* ==================== 模块：页面净化 Purify ==================== */
@@ -369,6 +508,7 @@
         ['hideConsultCards', 'zmp-hide-consult'],
         ['hideMemberPromo', 'zmp-hide-member-promo'],
         ['hideVideo', 'zmp-hide-video'],
+        ['cleanSearchPage', 'zmp-clean-search'],
       ];
       toggles.forEach(([key, cls]) => toggleBodyClass(cls, this.config[key]));
     },
@@ -419,17 +559,92 @@
         blockAuthors: config.filter.blockAuthors,
         hideLowLike: config.purify.hideLowLike,
         lowLikeThreshold: config.purify.lowLikeThreshold,
+        hideLowComments: config.purify.hideLowComments,
+        lowCommentThreshold: config.purify.lowCommentThreshold,
+        blockTypes: config.purify.blockTypes,
       };
       this.filterFeed();
       this.observeNewContent();
     },
 
+    /** 检测当前页面类型（与扩展版 filter.detectPage 一致） */
+    detectPage() {
+      const path = window.location.pathname;
+      if (path.includes('/follow')) return 'follow';
+      if (path.includes('/hot')) return 'hot';
+      if (path.includes('/search')) return 'search';
+      return 'home';
+    },
+
     filterFeed() {
       document.querySelectorAll(SELECTORS.CARDS).forEach(card => {
-        if (this._isLowLike(card) || this._isBlockedAuthor(card) || this._isBlockedKeyword(card)) {
+        if (this._isBlockedType(card) ||
+            this._isLowLike(card) ||
+            this._isLowComments(card) ||
+            this._isBlockedAuthor(card) ||
+            this._isBlockedKeyword(card)) {
           card.style.display = 'none';
         }
       });
+    },
+
+    /** 按页面分类屏蔽（视频/文章/想法/盐选/关注动态） */
+    _isBlockedType(card) {
+      const pageRules = this.config.blockTypes && this.config.blockTypes[this.detectPage()];
+      if (!pageRules) return false;
+      const type = this._getCardType(card);
+      if (!type) return false;
+      if (type === 'followActivity') {
+        return !!pageRules.followActivity && this._isFollowActivity(card);
+      }
+      return !!pageRules[type];
+    },
+
+    /** 识别卡片内容类型（与扩展版一致：zop 优先，结构兜底） */
+    _getCardType(card) {
+      const zopEl = card.closest('[data-zop]') || card.querySelector('[data-zop]');
+      if (zopEl) {
+        try {
+          const zop = JSON.parse(zopEl.getAttribute('data-zop'));
+          if (zop && zop.type) {
+            const t = zop.type;
+            if (t === 'zvideo' || t === 'video') return 'video';
+            if (t === 'article' || t === 'Article') return 'article';
+            if (t === 'pin') return 'pin';
+          }
+        } catch (e) { /* 忽略解析失败 */ }
+      }
+      if (card.querySelector('.VideoAnswerPlayer, [class*="ZVideoItem"], video')) return 'video';
+      if (card.querySelector('.PinItem, [class*="PinItem"]')) return 'pin';
+      if (card.querySelector('a[href*="/p/"]')) return 'article';
+      if (card.querySelector('[class*="KfeCollection"], [class*="PayWall"], a[href*="/salt/"], a[href*="盐选"]')) return 'salt';
+      return null;
+    },
+
+    /** 关注动态类卡片（xx 赞同了回答 / xx 关注了问题） */
+    _isFollowActivity(card) {
+      const source = card.querySelector('.FeedSource, [class*="FeedSource"]');
+      if (!source) return false;
+      return /赞同了|关注了|回答了|发布了/.test(source.textContent || '');
+    },
+
+    /** 低评论内容屏蔽 */
+    _isLowComments(card) {
+      if (!this.config.hideLowComments) return false;
+      const threshold = this.config.lowCommentThreshold || 3;
+      const count = this.getCommentCount(card);
+      return count > 0 && count < threshold;
+    },
+
+    /** 解析评论数（"N 条评论"） */
+    getCommentCount(card) {
+      const btn = card.querySelector('button[class*="ContentItem-action"], .ContentItem-actions button');
+      if (!btn) return 0;
+      const match = (btn.textContent || '').match(/(\d+(?:\.\d+)?)\s*(万)?\s*条评论/);
+      if (!match) return 0;
+      let num = parseFloat(match[1]);
+      if (match[2]) num *= 10000;
+      return Math.round(num);
     },
 
     _isLowLike(card) {
@@ -496,14 +711,22 @@
     init(config) {
       this.config = config.enhance;
 
+      toggleBodyClass('zmp-night-img-dim', this.config.nightImageDim);
+
       if (this.config.directLinks) this.rewriteDirectLinks();
       if (this.config.showFullTime) this.enhanceTimeDisplay();
       if (this.config.codeCopyButton) this.addCodeCopyButtons();
       if (this.config.collapseAllButton) this.addCollapseAllButton();
       if (this.config.removeLoginPopup) this.removeLoginPopup();
+      if (this.config.collapseByDefault) this.collapseDefaultAnswers();
+      if (this.config.showQuestionAuthor) this.showQuestionAuthor();
+      if (this.config.directQuestionButton) this.addDirectQuestionButtons();
+      if (this.config.openInNewTab) this.applyOpenInNewTab();
+      if (this.config.imageHoverPreview) this.initImagePreview();
 
       // 动态内容统一监听（与扩展版 enhance 模块约定一致）
-      if (this.config.directLinks || this.config.showFullTime || this.config.codeCopyButton) {
+      if (this.config.directLinks || this.config.showFullTime || this.config.codeCopyButton ||
+          this.config.collapseByDefault || this.config.directQuestionButton || this.config.openInNewTab) {
         let timer = null;
         this.observer = createBodyObserver(() => {
           if (timer) clearTimeout(timer);
@@ -516,6 +739,9 @@
       if (this.config.directLinks) this.rewriteDirectLinks();
       if (this.config.showFullTime) this.enhanceTimeDisplay();
       if (this.config.codeCopyButton) this.addCodeCopyButtons();
+      if (this.config.collapseByDefault) this.collapseDefaultAnswers();
+      if (this.config.directQuestionButton) this.addDirectQuestionButtons();
+      if (this.config.openInNewTab) this.applyOpenInNewTab();
     },
 
     /** 站外直链还原（link.zhihu.com/?target= 解码） */
@@ -610,11 +836,338 @@
       setTimeout(dismiss, 4000);
     },
 
+    /* ===== v2.0.0 新增 ===== */
+
+    /** 默认收起长回答（保留前 3 个展开，与扩展版一致） */
+    collapseDefaultAnswers() {
+      if (!window.location.pathname.includes('/question/')) return;
+
+      document.querySelectorAll('.List-item .ContentItem, .List-item').forEach(item => {
+        if (item.dataset.zmpCollapsed) return;
+        if (!item.querySelector('.RichContent-inner')) return;
+
+        this._collapsedCount = (this._collapsedCount || 0) + 1;
+        item.dataset.zmpCollapsed = '1';
+        if (this._collapsedCount <= 3) return;
+
+        const btn = this._findCollapseButton(item);
+        if (btn) btn.click();
+      });
+    },
+
+    _findCollapseButton(item) {
+      for (const btn of item.querySelectorAll('button')) {
+        if ((btn.textContent || '').trim() === '收起') return btn;
+      }
+      return null;
+    },
+
+    /** 直达问题按钮（/question/x/answer/y → 直达 /question/x） */
+    addDirectQuestionButtons(root = document) {
+      root.querySelectorAll('a[href*="/answer/"]').forEach(a => {
+        const href = a.getAttribute('href') || '';
+        const match = href.match(/\/question\/(\d+)\/answer\/\d+/);
+        if (!match) return;
+        if (!a.closest('h2, .ContentItem-title')) return;
+        if (a.parentNode.querySelector('.zmp-direct-q')) return;
+
+        const btn = document.createElement('a');
+        btn.className = 'zmp-direct-q';
+        btn.href = `https://www.zhihu.com/question/${match[1]}`;
+        btn.textContent = '直达问题';
+        btn.title = '跳过回答，直接打开问题页';
+        a.parentNode.appendChild(btn);
+      });
+    },
+
+    /** 显示提问者昵称（解析 #js-initialData） */
+    showQuestionAuthor() {
+      if (!window.location.pathname.includes('/question/')) return;
+      if (document.querySelector('.zmp-question-author')) return;
+
+      try {
+        const dataEl = document.getElementById('js-initialData');
+        if (!dataEl) return;
+        const data = JSON.parse(dataEl.textContent);
+        const questions = data && data.entities && data.entities.questions;
+        if (!questions) return;
+
+        const qid = window.location.pathname.match(/\/question\/(\d+)/);
+        const q = (qid && questions[qid[1]]) || Object.values(questions)[0];
+        const authorName = q && q.author && q.author.name;
+        if (!authorName || authorName === '知乎用户') return;
+
+        const header = document.querySelector('.QuestionHeader-side, .QuestionHeader-Comment');
+        if (!header) return;
+
+        const tag = document.createElement('span');
+        tag.className = 'zmp-question-author';
+        tag.textContent = '提问者：' + authorName;
+        header.appendChild(tag);
+      } catch (e) { /* 静默失败 */ }
+    },
+
+    /** 信息流标题链接新标签页打开 */
+    applyOpenInNewTab(root = document) {
+      root.querySelectorAll(
+        '.TopstoryItem h2 a, .ContentItem-title a, .HotItem a, .SearchResult-Card a'
+      ).forEach(a => {
+        if (a.dataset.zmpNewTab) return;
+        a.dataset.zmpNewTab = '1';
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+      });
+    },
+
+    /** 图片悬停预览（正文大图 → 居中放大） */
+    initImagePreview() {
+      if (this._imgOverHandler) return;
+      let overlay = null;
+
+      const hide = () => {
+        if (overlay) { overlay.remove(); overlay = null; }
+      };
+      this._imgOverHandler = (e) => {
+        const img = e.target;
+        if (!(img instanceof HTMLImageElement)) return;
+        if (!img.closest('.RichText, .RichContent-inner, .Post-RichTextContainer')) return;
+        if (img.naturalWidth <= 300 || img.naturalHeight <= 200) return;
+
+        hide();
+        overlay = document.createElement('div');
+        overlay.className = 'zmp-img-overlay';
+        const big = document.createElement('img');
+        big.src = img.src;
+        const caption = document.createElement('span');
+        caption.className = 'zmp-img-caption';
+        caption.textContent = '点击任意处关闭';
+        overlay.append(big, caption);
+        overlay.addEventListener('click', hide);
+        document.body.appendChild(overlay);
+      };
+      this._imgOutHandler = (e) => {
+        const img = e.target;
+        if (!(img instanceof HTMLImageElement)) return;
+        if (!overlay || overlay.querySelector('img').src !== img.src) return;
+        setTimeout(() => {
+          if (overlay && !overlay.matches(':hover')) hide();
+        }, 120);
+      };
+      document.addEventListener('mouseover', this._imgOverHandler, true);
+      document.addEventListener('mouseout', this._imgOutHandler, true);
+    },
+
     destroy() {
       if (this.observer) { this.observer.disconnect(); this.observer = null; }
       if (this._collapseBtn) { this._collapseBtn.remove(); this._collapseBtn = null; }
+      if (this._imgOverHandler) {
+        document.removeEventListener('mouseover', this._imgOverHandler, true);
+        this._imgOverHandler = null;
+      }
+      if (this._imgOutHandler) {
+        document.removeEventListener('mouseout', this._imgOutHandler, true);
+        this._imgOutHandler = null;
+      }
     },
   };
+
+  /* ==================== 模块：一句话提炼 Digest ==================== */
+
+  const AD_PATTERNS = [/关注公众号/g, /添加微信/g, /优惠券/g, /折扣码/g, /下单/g, /直播间/g, /粉丝群/g, /私聊/g];
+  const EMOTION_PATTERNS = [/真的[太超好]/g, /绝了/g, /崩溃/g, /泪目/g, /气死/g, /太(难受|心疼|离谱)/g, /救命/g, /破防/g];
+  const KNOWLEDGE_PATTERNS = [/首先/g, /其次/g, /原理是/g, /结论是/g, /步骤/g, /方法[是如]/g, /定义/g, /综上/g];
+
+  const Digest = {
+    config: null,
+    observer: null,
+
+    init(config) {
+      this.config = config.digest;
+      if (this.config.enabled === false) return;
+      this.process();
+      let timer = null;
+      this.observer = createBodyObserver((node, cls) => {
+        if (cls.includes('ContentItem') || cls.includes('List-item')) {
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(() => this.process(), 600);
+        }
+      });
+    },
+
+    process() {
+      const minWords = this.config.minWords || 500;
+      document.querySelectorAll(SELECTORS.CARDS).forEach(item => {
+        if (item.querySelector('.zmp-digest-bar')) return;
+        const content = item.querySelector('.RichContent-inner, .RichContent');
+        if (!content) return;
+
+        const text = (content.innerText || '').replace(/\s+/g, ' ').trim();
+        if (text.length < minWords) return;
+
+        const oneLiner = this.extractOneLiner(content, text);
+        if (!oneLiner) return;
+
+        const bar = document.createElement('div');
+        bar.className = 'zmp-digest-bar';
+        let tagHtml = '';
+        if (this.config.classify !== false) {
+          const kind = this.classify(text);
+          tagHtml = `<span class="zmp-digest-tag zmp-digest-${kind.key}">${kind.label}</span>`;
+        }
+        bar.innerHTML = `<span class="zmp-digest-label">一句话</span>${tagHtml}` +
+          `<span class="zmp-digest-text">${escapeHtmlText(oneLiner)}</span>`;
+        content.parentNode.insertBefore(bar, content);
+      });
+    },
+
+    /** 提炼一句话：加粗句 > 结论句 > 首句（与扩展版一致） */
+    extractOneLiner(content, fullText) {
+      const strong = content.querySelector('strong, b');
+      if (strong) {
+        const t = strong.textContent.trim();
+        if (t.length >= 10 && t.length <= 100) return t;
+      }
+      const conclusion = fullText.match(/(?:总之|综上|所以|因此|结论是)[^。！？]{10,80}/);
+      if (conclusion) return conclusion[0];
+      const first = fullText.match(/[^。！？]{15,80}[。！？]/);
+      return first ? first[0] : null;
+    },
+
+    /** 内容分类（与扩展版 digest.classify 一致） */
+    classify(text) {
+      const count = (re) => (text.match(re) || []).length;
+      const ad = count(/关注公众号|添加微信|优惠券|折扣码|下单|直播间|粉丝群|私聊/g);
+      const emotion = count(/真的[太超好]|绝了|崩溃|泪目|气死|太(难受|心疼|离谱)|救命|破防/g) +
+        (text.match(/！/g) || []).length / 5;
+      const knowledge = count(/首先|其次|原理是|结论是|步骤|方法[是如]|定义|综上/g);
+
+      if (ad >= 2) return { key: 'ad', label: '疑似软文' };
+      if (emotion >= 3) return { key: 'emotion', label: '情绪表达' };
+      if (knowledge >= 2) return { key: 'knowledge', label: '知识' };
+      return { key: 'opinion', label: '观点' };
+    },
+
+    destroy() {
+      if (this.observer) { this.observer.disconnect(); this.observer = null; }
+    },
+  };
+
+  /* ==================== 模块：划词工具 Selection ==================== */
+
+  const Selection = {
+    config: null,
+    _toolbar: null,
+    _mouseupHandler: null,
+    _mousedownHandler: null,
+    _scrollHandler: null,
+
+    init(config) {
+      this.config = config.selection;
+      if (this.config.blockWord === false) return;
+
+      this._mouseupHandler = () => this._handleSelection();
+      this._mousedownHandler = (e) => {
+        if (this._toolbar && !this._toolbar.contains(e.target)) this._hide();
+      };
+      this._scrollHandler = () => this._hide();
+
+      document.addEventListener('mouseup', this._mouseupHandler);
+      document.addEventListener('mousedown', this._mousedownHandler, true);
+      window.addEventListener('scroll', this._scrollHandler, { passive: true });
+    },
+
+    _handleSelection() {
+      setTimeout(() => {
+        const sel = window.getSelection();
+        const text = sel ? sel.toString().trim() : '';
+        if (!sel || !text || text.length < 2 || text.length > 120) return this._hide();
+
+        const tag = (document.activeElement?.tagName || '').toLowerCase();
+        if (tag === 'input' || tag === 'textarea') return;
+
+        const range = sel.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        if (!rect || (!rect.width && !rect.height)) return;
+
+        this._show(text, rect);
+      }, 10);
+    },
+
+    _show(text, rect) {
+      if (!this._toolbar) {
+        this._toolbar = document.createElement('div');
+        this._toolbar.id = 'zmp-sel-toolbar';
+        document.body.appendChild(this._toolbar);
+
+        this._toolbar.addEventListener('mousedown', (e) => e.stopPropagation());
+        this._toolbar.addEventListener('click', (e) => {
+          if (e.target.dataset.act !== 'block') return;
+          this._addBlockWord(e.target.closest('#zmp-sel-toolbar').dataset.text);
+          this._hide();
+        });
+      }
+      this._toolbar.innerHTML = '<button data-act="block">＋ 屏蔽</button>';
+      this._toolbar.style.display = 'flex';
+      this._toolbar.dataset.text = text;
+
+      const tb = this._toolbar.getBoundingClientRect();
+      const left = Math.min(
+        Math.max(8, rect.left + rect.width / 2 - tb.width / 2),
+        window.innerWidth - tb.width - 8
+      );
+      const top = rect.top > 60 ? rect.top - tb.height - 8 : rect.bottom + 8;
+      this._toolbar.style.left = left + 'px';
+      this._toolbar.style.top = Math.max(8, top) + 'px';
+    },
+
+    async _addBlockWord(word) {
+      const keywords = App.config.filter.blockKeywords || [];
+      if (!keywords.includes(word)) {
+        keywords.push(word);
+        App.config.filter.blockKeywords = keywords;
+        saveConfig(App.config);
+        Filter.config.blockKeywords = keywords;
+        Filter.filterFeed();
+        showToast('已屏蔽关键词：' + word);
+      }
+    },
+
+    _hide() {
+      if (this._toolbar) this._toolbar.style.display = 'none';
+    },
+
+    destroy() {
+      if (this._mouseupHandler) {
+        document.removeEventListener('mouseup', this._mouseupHandler);
+        this._mouseupHandler = null;
+      }
+      if (this._mousedownHandler) {
+        document.removeEventListener('mousedown', this._mousedownHandler, true);
+        this._mousedownHandler = null;
+      }
+      if (this._scrollHandler) {
+        window.removeEventListener('scroll', this._scrollHandler);
+        this._scrollHandler = null;
+      }
+      if (this._toolbar) { this._toolbar.remove(); this._toolbar = null; }
+    },
+  };
+
+  /** 通用 toast（轻量版） */
+  function showToast(message, duration = 2200) {
+    const old = document.getElementById('zmp-toast');
+    if (old) old.remove();
+    const el = document.createElement('div');
+    el.id = 'zmp-toast';
+    el.textContent = message;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), duration);
+  }
+
+  function escapeHtmlText(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
 
   /* ==================== 模块：阅读样式 Reader ==================== */
 
@@ -688,6 +1241,32 @@
         { label: '屏蔽视频/视频回答', key: 'purify.hideVideo', type: 'bool' },
         { label: '屏蔽低赞内容', key: 'purify.hideLowLike', type: 'bool' },
         { label: '低赞阈值', key: 'purify.lowLikeThreshold', type: 'number', min: 1, max: 100 },
+        { label: '屏蔽低评论内容', key: 'purify.hideLowComments', type: 'bool' },
+        { label: '低评论阈值（条）', key: 'purify.lowCommentThreshold', type: 'number', min: 0, max: 20 },
+        { label: '净化搜索页（隐藏侧边推荐）', key: 'purify.cleanSearchPage', type: 'bool' },
+      ],
+    },
+    {
+      group: '按页面分类屏蔽（首页/关注/热榜/搜索）',
+      items: [
+        { label: '首页屏蔽视频', key: 'purify.blockTypes.home.video', type: 'bool' },
+        { label: '首页屏蔽文章', key: 'purify.blockTypes.home.article', type: 'bool' },
+        { label: '首页屏蔽想法', key: 'purify.blockTypes.home.pin', type: 'bool' },
+        { label: '首页屏蔽盐选内容', key: 'purify.blockTypes.home.salt', type: 'bool' },
+        { label: '首页屏蔽关注动态', key: 'purify.blockTypes.home.followActivity', type: 'bool' },
+        { label: '关注页屏蔽视频', key: 'purify.blockTypes.follow.video', type: 'bool' },
+        { label: '关注页屏蔽文章', key: 'purify.blockTypes.follow.article', type: 'bool' },
+        { label: '关注页屏蔽想法', key: 'purify.blockTypes.follow.pin', type: 'bool' },
+        { label: '关注页屏蔽盐选内容', key: 'purify.blockTypes.follow.salt', type: 'bool' },
+        { label: '关注页屏蔽关注动态', key: 'purify.blockTypes.follow.followActivity', type: 'bool' },
+        { label: '热榜屏蔽视频', key: 'purify.blockTypes.hot.video', type: 'bool' },
+        { label: '热榜屏蔽文章', key: 'purify.blockTypes.hot.article', type: 'bool' },
+        { label: '热榜屏蔽想法', key: 'purify.blockTypes.hot.pin', type: 'bool' },
+        { label: '热榜屏蔽盐选内容', key: 'purify.blockTypes.hot.salt', type: 'bool' },
+        { label: '搜索屏蔽视频', key: 'purify.blockTypes.search.video', type: 'bool' },
+        { label: '搜索屏蔽文章', key: 'purify.blockTypes.search.article', type: 'bool' },
+        { label: '搜索屏蔽想法', key: 'purify.blockTypes.search.pin', type: 'bool' },
+        { label: '搜索屏蔽盐选内容', key: 'purify.blockTypes.search.salt', type: 'bool' },
       ],
     },
     {
@@ -698,6 +1277,26 @@
         { label: '代码块一键复制按钮', key: 'enhance.codeCopyButton', type: 'bool' },
         { label: '一键收起全部回答', key: 'enhance.collapseAllButton', type: 'bool' },
         { label: '自动关闭登录弹窗', key: 'enhance.removeLoginPopup', type: 'bool' },
+        { label: '默认收起长回答（保留前3个）', key: 'enhance.collapseByDefault', type: 'bool' },
+        { label: '显示提问者昵称', key: 'enhance.showQuestionAuthor', type: 'bool' },
+        { label: '回答链接旁"直达问题"按钮', key: 'enhance.directQuestionButton', type: 'bool' },
+        { label: '信息流新标签页打开', key: 'enhance.openInNewTab', type: 'bool' },
+        { label: '图片悬停放大预览', key: 'enhance.imageHoverPreview', type: 'bool' },
+        { label: '夜间模式下调暗图片', key: 'enhance.nightImageDim', type: 'bool' },
+      ],
+    },
+    {
+      group: '一句话提炼',
+      items: [
+        { label: '显示一句话提炼条', key: 'digest.enabled', type: 'bool' },
+        { label: '内容类型标签', key: 'digest.classify', type: 'bool' },
+        { label: '最低字数', key: 'digest.minWords', type: 'number', min: 100, max: 2000, step: 100 },
+      ],
+    },
+    {
+      group: '划词工具',
+      items: [
+        { label: '划词添加屏蔽词', key: 'selection.blockWord', type: 'bool' },
       ],
     },
     {
@@ -819,7 +1418,7 @@
 
   const App = {
     config: null,
-    modules: [Purify, Filter, Enhance, Reader, Shortcuts],
+    modules: [Purify, Filter, Enhance, Digest, Selection, Reader, Shortcuts],
 
     start() {
       if (this._started) return;

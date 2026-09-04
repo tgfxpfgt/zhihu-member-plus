@@ -7,6 +7,7 @@ const ZMPEnhance = {
   config: null,
   _observer: null,
   _collapseBtn: null,
+  _collapsedCount: 0,
 
   async init(config) {
     this.config = config.enhance || {};
@@ -16,9 +17,14 @@ const ZMPEnhance = {
     if (this.config.codeCopyButton) this.addCodeCopyButtons();
     if (this.config.collapseAllButton) this.addCollapseAllButton();
     if (this.config.removeLoginPopup) this.removeLoginPopup();
+    if (this.config.collapseByDefault) this.collapseDefaultAnswers();
+    if (this.config.showQuestionAuthor) this.showQuestionAuthor();
+    if (this.config.directQuestionButton) this.addDirectQuestionButtons();
+    if (this.config.openInNewTab) this.applyOpenInNewTab();
 
     // 动态内容统一监听（防抖）
-    if (this.config.directLinks || this.config.showFullTime || this.config.codeCopyButton) {
+    if (this.config.directLinks || this.config.showFullTime || this.config.codeCopyButton ||
+        this.config.collapseByDefault || this.config.directQuestionButton || this.config.openInNewTab) {
       let timer = null;
       this._observer = ZMPUtils.createBodyObserver(() => {
         if (timer) clearTimeout(timer);
@@ -28,12 +34,15 @@ const ZMPEnhance = {
   },
 
   /**
-   * 对动态新增的内容统一应用（直链/时间/代码复制）
+   * 对动态新增的内容统一应用（直链/时间/代码复制/默认收起/直达问题/新标签页）
    */
   processDynamicContent() {
     if (this.config.directLinks) this.rewriteDirectLinks();
     if (this.config.showFullTime) this.enhanceTimeDisplay();
     if (this.config.codeCopyButton) this.addCodeCopyButtons();
+    if (this.config.collapseByDefault) this.collapseDefaultAnswers();
+    if (this.config.directQuestionButton) this.addDirectQuestionButtons();
+    if (this.config.openInNewTab) this.applyOpenInNewTab();
   },
 
   /* ========== 站外链接直链还原 ========== */
@@ -199,6 +208,118 @@ const ZMPEnhance = {
     dismiss();
     setTimeout(dismiss, 1500);
     setTimeout(dismiss, 4000);
+  },
+
+  /* ========== 默认收起回答 (C1) ========== */
+
+  /**
+   * 问题页默认收起长回答（仅保留前 3 个展开），懒加载的新回答同样处理
+   */
+  collapseDefaultAnswers() {
+    if (!window.location.pathname.includes('/question/')) return;
+
+    const items = document.querySelectorAll('.List-item .ContentItem, .List-item');
+    items.forEach(item => {
+      if (item.dataset.zmpCollapsed) return;
+      if (!item.querySelector('.RichContent-inner')) return;
+
+      this._collapsedCount++;
+      item.dataset.zmpCollapsed = '1';
+
+      // 保留前 3 个回答展开
+      if (this._collapsedCount <= 3) return;
+
+      const btn = this._findCollapseButton(item);
+      if (btn) btn.click();
+    });
+  },
+
+  /** 在回答 item 内寻找"收起"按钮 */
+  _findCollapseButton(item) {
+    const buttons = item.querySelectorAll('button');
+    for (const btn of buttons) {
+      const text = (btn.textContent || '').trim();
+      if (text === '收起') return btn;
+    }
+    return null;
+  },
+
+  /* ========== 直达问题按钮 (C2) ========== */
+
+  /**
+   * 对指向具体回答的链接（/question/x/answer/y）旁添加"直达问题"入口
+   */
+  addDirectQuestionButtons(root = document) {
+    const links = root.querySelectorAll('a[href*="/answer/"]');
+    links.forEach(a => {
+      const href = a.getAttribute('href') || '';
+      const match = href.match(/\/question\/(\d+)\/answer\/\d+/);
+      if (!match) return;
+      // 标题链接本身才加（避免正文里每条链接都加）
+      if (!a.closest('h2, .ContentItem-title')) return;
+      if (a.parentNode.querySelector('.zmp-direct-q')) return;
+
+      const qid = match[1];
+      const btn = document.createElement('a');
+      btn.className = 'zmp-direct-q';
+      btn.href = `https://www.zhihu.com/question/${qid}`;
+      btn.textContent = '直达问题';
+      btn.title = '跳过回答，直接打开问题页';
+      a.parentNode.appendChild(btn);
+    });
+  },
+
+  /* ========== 显示提问者 (C2) ========== */
+
+  /**
+   * 问题页显示提问者昵称（解析 #js-initialData）
+   */
+  showQuestionAuthor() {
+    if (!window.location.pathname.includes('/question/')) return;
+    if (document.querySelector('.zmp-question-author')) return;
+
+    try {
+      const dataEl = document.getElementById('js-initialData');
+      if (!dataEl) return;
+      const data = JSON.parse(dataEl.textContent);
+      const questions = data && data.entities && data.entities.questions;
+      if (!questions) return;
+
+      const qid = window.location.pathname.match(/\/question\/(\d+)/);
+      if (!qid) return;
+      const q = questions[qid[1]] || Object.values(questions)[0];
+      // 知乎新版可能将提问者放在 author 字段（旧版匿名时为 null）
+      const authorName = q && q.author && (q.author.name || '');
+      if (!authorName || authorName === '知乎用户') return;
+
+      const header = document.querySelector('.QuestionHeader-side, .QuestionHeader-Comment');
+      if (!header) return;
+
+      const tag = document.createElement('span');
+      tag.className = 'zmp-question-author';
+      tag.textContent = '提问者：' + authorName;
+      header.appendChild(tag);
+    } catch (e) {
+      // initialData 结构变化时静默失败
+    }
+  },
+
+  /* ========== 新标签页打开 (B7) ========== */
+
+  /** 信息流/搜索结果中标题链接改为新标签页打开 */
+  applyOpenInNewTab(root = document) {
+    const LINK_SELECTORS = [
+      '.TopstoryItem h2 a',
+      '.ContentItem-title a',
+      '.HotItem a',
+      '.SearchResult-Card a',
+    ];
+    root.querySelectorAll(LINK_SELECTORS.join(', ')).forEach(a => {
+      if (a.dataset.zmpNewTab) return;
+      a.dataset.zmpNewTab = '1';
+      a.setAttribute('target', '_blank');
+      a.setAttribute('rel', 'noopener noreferrer');
+    });
   },
 
   /**

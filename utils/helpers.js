@@ -61,6 +61,31 @@ const ZMPUtils = {
     return JSON.parse(JSON.stringify(obj));
   },
 
+  /**
+   * HTML 转义（AI 总结等富文本渲染前必须先转义）
+   */
+  escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  /**
+   * 通用轻量 toast 提示（自动消失，同一时刻只保留一个）
+   */
+  showToast(message, duration = 2200) {
+    const old = document.getElementById('zmp-toast');
+    if (old) old.remove();
+    const el = document.createElement('div');
+    el.id = 'zmp-toast';
+    el.textContent = message;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), duration);
+  },
+
   /* ========== DOM 工具 ========== */
 
   /**

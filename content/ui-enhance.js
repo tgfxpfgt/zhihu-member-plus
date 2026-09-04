@@ -9,14 +9,21 @@ const ZMPUIEnhance = {
   _debugInterval: null,
   _outsideClickHandler: null,
   _keyHandler: null,
+  _autoscrollTimer: null,
 
-  /** 快捷键映射（Alt+X 组合） */
-  SHORTCUTS: {
-    z: () => ZMPUIEnhance.toggleFloatMenu(),      // Alt+Z 开关悬浮菜单
-    t: () => ZMPUIEnhance.handleMenuAction('toc'), // Alt+T 目录
-    n: () => ZMPReader.toggleNightMode(),          // Alt+N 夜间模式
-    i: () => ZMPReader.toggleImmersive(),          // Alt+I 沉浸阅读
+  /** 快捷键动作映射（键位由 config.uiEnhance.shortcutKeys 决定，Alt+X 组合） */
+  SHORTCUT_ACTIONS: {
+    menu:       () => ZMPUIEnhance.toggleFloatMenu(),
+    toc:        () => ZMPUIEnhance.handleMenuAction('toc'),
+    night:      () => ZMPReader.toggleNightMode(),
+    immersive:  () => ZMPReader.toggleImmersive(),
+    tts:        () => ZMPUIEnhance.handleMenuAction('tts'),
+    aggregate:  () => ZMPUIEnhance.handleMenuAction('aggregate'),
+    autoscroll: () => ZMPUIEnhance.handleMenuAction('autoscroll'),
   },
+
+  /** 快捷键默认键位（被 config.uiEnhance.shortcutKeys 覆盖） */
+  DEFAULT_KEYS: { menu: 'z', toc: 't', night: 'n', immersive: 'i' },
 
   async init(config) {
     this.config = config.uiEnhance || {};
@@ -60,7 +67,7 @@ const ZMPUIEnhance = {
   },
 
   /**
-   * 注册键盘快捷键（输入框聚焦时不触发）
+   * 注册键盘快捷键（键位从 config.uiEnhance.shortcutKeys 读取，输入框聚焦时不触发）
    */
   setupShortcuts() {
     this._keyHandler = (e) => {
@@ -68,10 +75,12 @@ const ZMPUIEnhance = {
       const tag = (document.activeElement?.tagName || '').toLowerCase();
       if (tag === 'input' || tag === 'textarea' || document.activeElement?.isContentEditable) return;
 
-      const action = this.SHORTCUTS[e.key.toLowerCase()];
-      if (action) {
+      const keys = Object.assign({}, this.DEFAULT_KEYS, this.config.shortcutKeys || {});
+      const pressed = e.key.toLowerCase();
+      const actionName = Object.keys(keys).find(name => keys[name] === pressed);
+      if (actionName && this.SHORTCUT_ACTIONS[actionName]) {
         e.preventDefault();
-        action();
+        this.SHORTCUT_ACTIONS[actionName]();
       }
     };
     document.addEventListener('keydown', this._keyHandler);
@@ -104,6 +113,9 @@ const ZMPUIEnhance = {
       <button class="zmp-fm-btn" data-action="immersive">📖 沉浸阅读</button>
       <button class="zmp-fm-btn" data-action="night">🌙 夜间模式</button>
       <button class="zmp-fm-btn" data-action="toc">📑 文章目录</button>
+      <button class="zmp-fm-btn" data-action="tts">🎧 听书模式</button>
+      <button class="zmp-fm-btn" data-action="aggregate">🗂 回答聚合</button>
+      <button class="zmp-fm-btn" data-action="autoscroll">⏬ 自动滚动</button>
       <button class="zmp-fm-btn" data-action="top">⬆ 回到顶部</button>
       <button class="zmp-fm-btn" data-action="bottom">⬇ 跳到底部</button>
       <button class="zmp-fm-btn" data-action="hot">🔥 打开热门30问</button>
@@ -138,11 +150,39 @@ const ZMPUIEnhance = {
   MENU_ACTIONS: {
     immersive: () => ZMPReader.toggleImmersive(),
     night:     () => ZMPReader.toggleNightMode(),
+    tts:       () => ZMPTTS.toggle(),
+    aggregate: () => ZMPAggregate.toggle(),
+    autoscroll: null, // ZMPUIEnhance.toggleAutoscroll（初始化后填充）
     top:       () => window.scrollTo({ top: 0, behavior: 'smooth' }),
     bottom:    () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }),
     hot:       null, // ZMPUIEnhance.openHotQuestions（初始化后填充）
     debug:     null, // ZMPUIEnhance.toggleDebugPanel
     popup:     () => window.open(chrome.runtime.getURL('popup/popup.html'), '_blank', 'width=420,height=600'),
+  },
+
+  /**
+   * 切换自动滚动（速度 = autoscrollSpeed 像素/秒，按 100ms 步进）
+   */
+  toggleAutoscroll() {
+    if (this._autoscrollTimer) {
+      clearInterval(this._autoscrollTimer);
+      this._autoscrollTimer = null;
+      ZMPUtils.showToast('自动滚动已关闭');
+      return false;
+    }
+    const speed = Math.max(10, Math.min(200, this.config.autoscrollSpeed || 40));
+    const step = Math.max(1, Math.round(speed / 10));
+    this._autoscrollTimer = setInterval(() => {
+      window.scrollBy(0, step);
+      // 滚到底自动停止
+      if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 2) {
+        clearInterval(this._autoscrollTimer);
+        this._autoscrollTimer = null;
+        ZMPUtils.showToast('已滚动到底部，自动滚动结束');
+      }
+    }, 100);
+    ZMPUtils.showToast('自动滚动已开启（' + speed + ' px/s）');
+    return true;
   },
 
   /**
@@ -361,9 +401,14 @@ const ZMPUIEnhance = {
       this._onboardToast.remove();
       this._onboardToast = null;
     }
+    if (this._autoscrollTimer) {
+      clearInterval(this._autoscrollTimer);
+      this._autoscrollTimer = null;
+    }
   },
 };
 
 // 菜单动作中依赖自身实例的条目（定义后填充，避免 this 绑定问题）
 ZMPUIEnhance.MENU_ACTIONS.hot = () => ZMPUIEnhance.openHotQuestions();
 ZMPUIEnhance.MENU_ACTIONS.debug = () => ZMPUIEnhance.toggleDebugPanel();
+ZMPUIEnhance.MENU_ACTIONS.autoscroll = () => ZMPUIEnhance.toggleAutoscroll();

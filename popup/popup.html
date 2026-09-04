@@ -10,7 +10,7 @@
     <!-- 头部 -->
     <header class="popup-header">
       <h1>知乎盐选会员增强</h1>
-      <span class="version">v1.2</span>
+      <span class="version">v2.0</span>
     </header>
 
     <!-- 会员状态栏 -->
@@ -20,20 +20,35 @@
     </div>
 
     <!-- 快捷操作 -->
-    <div class="quick-actions">
+    <div class="quick-actions quick-actions-5">
       <button class="action-btn" id="btnImmersive" title="沉浸式阅读">📖 沉浸</button>
       <button class="action-btn" id="btnNight" title="夜间模式">🌙 夜间</button>
-      <button class="action-btn" id="btnExportMd" title="导出Markdown">📄 导出</button>
       <button class="action-btn" id="btnToc" title="目录">📑 目录</button>
+      <button class="action-btn" id="btnTts" title="听书模式">🎧 听书</button>
+      <button class="action-btn" id="btnExportMd" title="导出Markdown">📄 导出</button>
+    </div>
+
+    <!-- 本页生效功能 -->
+    <details class="active-features" id="activeFeatures">
+      <summary>⚡ 本页生效功能 <span class="af-count" id="afCount">0</span></summary>
+      <div class="af-page" id="afPage"></div>
+      <div class="af-chips" id="afChips"></div>
+    </details>
+
+    <!-- 设置搜索 -->
+    <div class="setting-search">
+      <input type="search" id="settingSearch" placeholder="🔍 搜索设置项（如：夜间、屏蔽、AI）" autocomplete="off">
     </div>
 
     <!-- 分类标签页 -->
     <nav class="tab-nav">
-      <button class="tab-btn active" data-tab="member">盐选会员</button>
-      <button class="tab-btn" data-tab="reader">阅读设置</button>
-      <button class="tab-btn" data-tab="purify">屏蔽净化</button>
-      <button class="tab-btn" data-tab="enhance">效率增强</button>
-      <button class="tab-btn" data-tab="performance">性能节流</button>
+      <button class="tab-btn active" data-tab="member">会员</button>
+      <button class="tab-btn" data-tab="reader">阅读</button>
+      <button class="tab-btn" data-tab="purify">净化</button>
+      <button class="tab-btn" data-tab="enhance">增强</button>
+      <button class="tab-btn" data-tab="smart">智能</button>
+      <button class="tab-btn" data-tab="collection">收藏</button>
+      <button class="tab-btn" data-tab="stats">统计</button>
     </nav>
 
     <!-- 盐选会员专属 -->
@@ -129,9 +144,31 @@
           <input type="checkbox" id="nightMode" data-section="reader">
         </label>
         <label class="setting-item">
+          <span>夜间模式下调暗图片</span>
+          <input type="checkbox" id="nightImageDim" data-section="enhance" checked>
+        </label>
+        <label class="setting-item">
           <span>长文分页（替代无尽滚动）</span>
           <input type="checkbox" id="pagination" data-section="reader">
         </label>
+      </div>
+      <div class="setting-group">
+        <h3>听书模式</h3>
+        <div class="setting-row">
+          <span>语速</span>
+          <select id="ttsRate">
+            <option value="0.5">0.5x</option>
+            <option value="0.75">0.75x</option>
+            <option value="1">1x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <span>音色</span>
+          <select id="ttsVoice"><option value="">系统默认（中文）</option></select>
+        </div>
       </div>
       <div class="setting-group">
         <h3>效率工具</h3>
@@ -143,6 +180,14 @@
           <span>自动生成文章目录</span>
           <input type="checkbox" id="tocEnabled" data-section="tools" checked>
         </label>
+        <label class="setting-item">
+          <span>自动滚动阅读（点击立即切换）</span>
+          <input type="checkbox" id="autoscrollToggle">
+        </label>
+        <div class="setting-row">
+          <span>自动滚动速度：<em id="autoscrollSpeedVal">40</em> px/s</span>
+          <input type="range" id="autoscrollSpeed" min="10" max="200" step="10" value="40">
+        </div>
       </div>
     </section>
 
@@ -174,6 +219,49 @@
           <span>拦截付费/推销弹窗</span>
           <input type="checkbox" id="hideMemberPromo" data-section="purify" checked>
         </label>
+        <label class="setting-item">
+          <span>净化搜索页（隐藏侧边推荐）</span>
+          <input type="checkbox" id="cleanSearchPage" data-section="purify" checked>
+        </label>
+      </div>
+      <div class="setting-group">
+        <h3>内容屏蔽</h3>
+        <label class="setting-item">
+          <span>屏蔽视频/视频回答</span>
+          <input type="checkbox" id="hideVideo" data-section="purify">
+        </label>
+        <label class="setting-item">
+          <span>屏蔽低赞回答/文章</span>
+          <input type="checkbox" id="hideLowLike" data-section="purify">
+        </label>
+        <div class="setting-row">
+          <span>低赞阈值：赞同低于 <em id="lowLikeThresholdVal">10</em> 屏蔽</span>
+          <input type="range" id="lowLikeThreshold" min="1" max="100" step="1" value="10">
+        </div>
+        <label class="setting-item">
+          <span>屏蔽低评论内容</span>
+          <input type="checkbox" id="hideLowComments" data-section="purify">
+        </label>
+        <div class="setting-row">
+          <span>低评论阈值：低于 <em id="lowCommentThresholdVal">3</em> 条屏蔽</span>
+          <input type="range" id="lowCommentThreshold" min="0" max="20" step="1" value="3">
+        </div>
+      </div>
+      <div class="setting-group">
+        <h3>按页面分类屏蔽</h3>
+        <div class="blocktype-pages" id="blocktypePages">
+          <button class="page-pill active" data-page="home">首页</button>
+          <button class="page-pill" data-page="follow">关注</button>
+          <button class="page-pill" data-page="hot">热榜</button>
+          <button class="page-pill" data-page="search">搜索</button>
+        </div>
+        <div class="blocktype-checks" id="blocktypeChecks">
+          <label class="setting-item"><span>视频内容</span><input type="checkbox" data-bt="video"></label>
+          <label class="setting-item"><span>文章</span><input type="checkbox" data-bt="article"></label>
+          <label class="setting-item"><span>想法（Pin）</span><input type="checkbox" data-bt="pin"></label>
+          <label class="setting-item"><span>盐选内容</span><input type="checkbox" data-bt="salt"></label>
+          <label class="setting-item bt-follow-activity"><span>关注动态（xx赞同了…）</span><input type="checkbox" data-bt="followActivity"></label>
+        </div>
       </div>
       <div class="setting-group">
         <h3>评论区优化</h3>
@@ -224,41 +312,170 @@
           <input type="checkbox" id="collapseAllButton" data-section="enhance" checked>
         </label>
         <label class="setting-item">
+          <span>默认收起长回答（仅展开前 3 个）</span>
+          <input type="checkbox" id="collapseByDefault" data-section="enhance">
+        </label>
+        <label class="setting-item">
           <span>自动关闭登录弹窗</span>
           <input type="checkbox" id="removeLoginPopup" data-section="enhance" checked>
         </label>
+        <label class="setting-item">
+          <span>信息流链接新标签页打开</span>
+          <input type="checkbox" id="openInNewTab" data-section="enhance">
+        </label>
       </div>
       <div class="setting-group">
-        <h3>屏蔽增强</h3>
+        <h3>问题页增强</h3>
         <label class="setting-item">
-          <span>屏蔽视频/视频回答</span>
-          <input type="checkbox" id="hideVideo" data-section="purify">
+          <span>显示提问者昵称</span>
+          <input type="checkbox" id="showQuestionAuthor" data-section="enhance" checked>
         </label>
         <label class="setting-item">
-          <span>屏蔽低赞回答/文章</span>
-          <input type="checkbox" id="hideLowLike" data-section="purify">
+          <span>回答链接旁加"直达问题"按钮</span>
+          <input type="checkbox" id="directQuestionButton" data-section="enhance" checked>
         </label>
-        <div class="setting-row">
-          <span>低赞阈值：赞同低于 <em id="lowLikeThresholdVal">10</em> 屏蔽</span>
-          <input type="range" id="lowLikeThreshold" min="1" max="100" step="1" value="10">
-        </div>
+        <label class="setting-item">
+          <span>回答聚合侧栏（按赞排序速览）</span>
+          <input type="checkbox" id="aggregateEnabled" data-section="aggregate" data-key="enabled" checked>
+        </label>
       </div>
       <div class="setting-group">
-        <h3>键盘快捷键</h3>
+        <h3>图片增强</h3>
+        <label class="setting-item">
+          <span>悬停放大预览正文大图</span>
+          <input type="checkbox" id="imageHoverPreview" data-section="enhance" checked>
+        </label>
+      </div>
+      <div class="setting-group">
+        <h3>键盘快捷键（Alt + 字母）</h3>
         <label class="setting-item">
           <span>启用快捷键</span>
           <input type="checkbox" id="shortcuts" data-section="uiEnhance" checked>
         </label>
-        <div class="shortcut-list">
-          <span><kbd>Alt</kbd>+<kbd>Z</kbd> 悬浮菜单</span>
-          <span><kbd>Alt</kbd>+<kbd>T</kbd> 文章目录</span>
-          <span><kbd>Alt</kbd>+<kbd>N</kbd> 夜间模式</span>
-          <span><kbd>Alt</kbd>+<kbd>I</kbd> 沉浸阅读</span>
+        <div class="shortcut-edit">
+          <span><kbd>Alt</kbd>+<input type="text" class="sc-input" data-sckey="menu" maxlength="1"> 悬浮菜单</span>
+          <span><kbd>Alt</kbd>+<input type="text" class="sc-input" data-sckey="toc" maxlength="1"> 文章目录</span>
+          <span><kbd>Alt</kbd>+<input type="text" class="sc-input" data-sckey="night" maxlength="1"> 夜间模式</span>
+          <span><kbd>Alt</kbd>+<input type="text" class="sc-input" data-sckey="immersive" maxlength="1"> 沉浸阅读</span>
+          <span><kbd>Alt</kbd>+<input type="text" class="sc-input" data-sckey="tts" maxlength="1"> 听书</span>
+          <span><kbd>Alt</kbd>+<input type="text" class="sc-input" data-sckey="aggregate" maxlength="1"> 回答聚合</span>
+          <span><kbd>Alt</kbd>+<input type="text" class="sc-input" data-sckey="autoscroll" maxlength="1"> 自动滚动</span>
         </div>
       </div>
     </section>
 
-    <!-- 性能节流 -->
+    <!-- 智能增强 -->
+    <section class="tab-panel" id="panel-smart">
+      <div class="setting-group">
+        <h3>AI 总结（自备 API Key）</h3>
+        <label class="setting-item">
+          <span>启用 AI 总结回答</span>
+          <input type="checkbox" id="aiEnabled" data-section="ai" data-key="enabled">
+        </label>
+        <div class="setting-row">
+          <span>服务商</span>
+          <select id="aiProvider">
+            <option value="deepseek">DeepSeek</option>
+            <option value="qwen">通义千问（阿里云）</option>
+            <option value="openai">OpenAI</option>
+            <option value="custom">自定义（兼容接口）</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <span>API Key</span>
+          <input type="password" id="aiApiKey" class="text-input" placeholder="sk-..." autocomplete="off">
+        </div>
+        <div class="setting-row">
+          <span>模型</span>
+          <input type="text" id="aiModel" class="text-input" placeholder="deepseek-chat">
+        </div>
+        <div class="setting-row">
+          <span>接口地址</span>
+          <input type="text" id="aiBaseUrl" class="text-input" placeholder="https://api.deepseek.com/v1/chat/completions">
+        </div>
+        <label class="setting-item">
+          <span>系统提示词（自定义总结风格）</span>
+        </label>
+        <textarea id="aiPrompt" rows="3" placeholder="留空使用默认提示词：一句话核心观点 + 要点列表 + 软文提示"></textarea>
+        <p class="hint">注：扩展从页面直接调用 API，需服务商支持浏览器跨域（DeepSeek/通义/OpenAI 均支持）。Key 仅存本地。</p>
+      </div>
+      <div class="setting-group">
+        <h3>一句话提炼</h3>
+        <label class="setting-item">
+          <span>显示一句话提炼条</span>
+          <input type="checkbox" id="digestEnabled" data-section="digest" data-key="enabled" checked>
+        </label>
+        <label class="setting-item">
+          <span>内容类型标签（软文/情绪/知识/观点）</span>
+          <input type="checkbox" id="digestClassify" data-section="digest" data-key="classify" checked>
+        </label>
+        <div class="setting-row">
+          <span>最低字数：<em id="digestMinWordsVal">500</em></span>
+          <input type="range" id="digestMinWords" min="100" max="2000" step="100" value="500">
+        </div>
+      </div>
+      <div class="setting-group">
+        <h3>划词工具</h3>
+        <label class="setting-item">
+          <span>划词添加屏蔽词</span>
+          <input type="checkbox" id="selectionBlockWord" data-section="selection" data-key="blockWord" checked>
+        </label>
+        <label class="setting-item">
+          <span>划词收藏好表达</span>
+          <input type="checkbox" id="selectionExpressionBook" data-section="selection" data-key="expressionBook" checked>
+        </label>
+      </div>
+    </section>
+
+    <!-- 本地收藏夹 -->
+    <section class="tab-panel" id="panel-collection">
+      <div class="setting-group">
+        <h3>本地收藏夹 <span class="badge" id="collectionCount">0</span></h3>
+        <label class="setting-item">
+          <span>回答旁显示收藏按钮</span>
+          <input type="checkbox" id="collectionEnabled" data-section="collection" data-key="enabled" checked>
+        </label>
+        <div class="btn-row">
+          <button class="small-btn" id="btnExportCollection">📦 导出 Markdown</button>
+          <button class="small-btn danger" id="btnClearCollection">🗑 清空收藏</button>
+        </div>
+        <div class="collection-list" id="collectionList"></div>
+        <p class="hint" id="collectionEmpty" style="display:none">暂无收藏。在知乎回答下点击 ☆ 收藏 即可添加。</p>
+      </div>
+    </section>
+
+    <!-- 阅读统计 -->
+    <section class="tab-panel" id="panel-stats">
+      <div class="setting-group">
+        <h3>今日阅读</h3>
+        <div class="stats-today" id="statsToday">
+          <div class="stat-cell"><b id="statMinutes">0</b><span>分钟</span></div>
+          <div class="stat-cell"><b id="statWords">0</b><span>字</span></div>
+          <div class="stat-cell"><b id="statArticles">0</b><span>篇</span></div>
+        </div>
+      </div>
+      <div class="setting-group">
+        <h3>近 7 天阅读时长</h3>
+        <div class="stats-bars" id="statsBars"></div>
+      </div>
+      <div class="setting-group">
+        <h3>统计设置</h3>
+        <label class="setting-item">
+          <span>启用阅读统计</span>
+          <input type="checkbox" id="statsEnabled" data-section="stats" data-key="enabled" checked>
+        </label>
+        <label class="setting-item">
+          <span>连续阅读时长提醒</span>
+          <input type="checkbox" id="statsReminderEnabled" data-section="stats" data-key="reminderEnabled">
+        </label>
+        <div class="setting-row">
+          <span>提醒间隔：<em id="reminderMinutesVal">30</em> 分钟</span>
+          <input type="range" id="reminderMinutes" min="10" max="120" step="5" value="30">
+        </div>
+      </div>
+    </section>
+
+    <!-- 性能节流（并入增强面板下方，保留为隐藏面板，搜索可达） -->
     <section class="tab-panel" id="panel-performance">
       <div class="setting-group">
         <h3>资源节流</h3>

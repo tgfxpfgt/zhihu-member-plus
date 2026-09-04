@@ -27,6 +27,18 @@ const ZMPFilter = {
   },
 
   /**
+   * 检测当前页面类型（分类屏蔽按页面区分）
+   * @returns {'home'|'follow'|'hot'|'search'}
+   */
+  detectPage() {
+    const path = window.location.pathname;
+    if (path.includes('/follow')) return 'follow';
+    if (path.includes('/hot')) return 'hot';
+    if (path.includes('/search')) return 'search';
+    return 'home';
+  },
+
+  /**
    * 过滤信息流内容
    */
   filterFeed() {
@@ -35,6 +47,18 @@ const ZMPFilter = {
     cards.forEach(card => {
       // 屏蔽带货内容
       if (this.config.hideGoodsCards && this.hasGoodsContent(card)) {
+        card.style.display = 'none';
+        return;
+      }
+
+      // 按页面分类屏蔽内容类型（视频/文章/想法/盐选/关注动态）
+      if (this._isBlockedType(card)) {
+        card.style.display = 'none';
+        return;
+      }
+
+      // 屏蔽低评论内容
+      if (this._isLowComments(card)) {
         card.style.display = 'none';
         return;
       }
@@ -57,6 +81,82 @@ const ZMPFilter = {
         return;
       }
     });
+  },
+
+  /**
+   * 判断卡片是否属于当前页面被屏蔽的内容类型
+   */
+  _isBlockedType(card) {
+    const blockTypes = this.config.blockTypes;
+    if (!blockTypes) return false;
+    const pageRules = blockTypes[this.detectPage()];
+    if (!pageRules) return false;
+
+    const type = this._getCardType(card);
+    if (!type) return false;
+
+    // 关注动态特殊：需同时开启开关且命中动态特征
+    if (type === 'followActivity') {
+      return !!pageRules.followActivity && this._isFollowActivity(card);
+    }
+    return !!pageRules[type];
+  },
+
+  /**
+   * 识别卡片内容类型（zvideo/article/pin/salt/followActivity）
+   */
+  _getCardType(card) {
+    // 优先从 data-zop 元数据判定
+    const zopEl = card.closest('[data-zop]') || card.querySelector('[data-zop]');
+    if (zopEl) {
+      try {
+        const zop = JSON.parse(zopEl.getAttribute('data-zop'));
+        if (zop && zop.type) {
+          const t = zop.type;
+          if (t === 'zvideo' || t === 'video') return 'video';
+          if (t === 'article' || t === 'Article') return 'article';
+          if (t === 'pin') return 'pin';
+        }
+      } catch (e) { /* 忽略解析失败 */ }
+    }
+    // 结构特征兜底
+    if (card.querySelector('.VideoAnswerPlayer, [class*="ZVideoItem"], video')) return 'video';
+    if (card.querySelector('.PinItem, [class*="PinItem"]')) return 'pin';
+    if (card.querySelector('a[href*="/p/"]')) return 'article';
+    if (card.querySelector('[class*="KfeCollection"], [class*="PayWall"], a[href*="/salt/"], a[href*="盐选"]')) return 'salt';
+    return null;
+  },
+
+  /** 是否为"关注动态"类卡片（xx 赞同了回答 / xx 关注了问题） */
+  _isFollowActivity(card) {
+    const source = card.querySelector('.FeedSource, [class*="FeedSource"]');
+    if (!source) return false;
+    const text = source.textContent || '';
+    return /赞同了|关注了|回答了|发布了/.test(text);
+  },
+
+  /**
+   * 检查是否为低评论内容（低于阈值则屏蔽）
+   */
+  _isLowComments(card) {
+    if (!this.config.hideLowComments) return false;
+    const threshold = this.config.lowCommentThreshold || 3;
+    const count = this.getCommentCount(card);
+    return count > 0 && count < threshold;
+  },
+
+  /**
+   * 获取卡片评论数（解析 "N 条评论" 文本）
+   */
+  getCommentCount(card) {
+    const btn = card.querySelector('button[class*="ContentItem-action"], .ContentItem-actions button');
+    if (!btn) return 0;
+    const text = btn.textContent || '';
+    const match = text.match(/(\d+(?:\.\d+)?)\s*(万)?\s*条评论/);
+    if (!match) return 0;
+    let num = parseFloat(match[1]);
+    if (match[2]) num *= 10000;
+    return Math.round(num);
   },
 
   /**

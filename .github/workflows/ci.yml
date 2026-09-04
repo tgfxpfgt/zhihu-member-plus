@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Syntax & version check
+        run: node scripts/check.js
+
+      - name: ESLint
+        run: npx --yes eslint@8.57.0 .
+
+      - name: Package extension zip
+        run: |
+          mkdir -p dist
+          zip -r dist/zhihu-member-plus.zip . \
+            -x "*.git*" \
+            -x ".github/*" \
+            -x ".workbuddy/*" \
+            -x "scripts/*" \
+            -x "ROADMAP.md" \
+            -x "README.md" \
+            -x "CHANGELOG.md" \
+            -x "zhihu-member-plus-lite.user.js" \
+            -x "git-commit.bat" \
+            -x ".eslintrc.json"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zhihu-member-plus
+          path: dist/zhihu-member-plus.zip

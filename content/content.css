@@ -1002,3 +1002,558 @@ body.zmp-theme-oled .zmp-fm-btn:hover {
   background: #1d3a5f;
   color: #7cb3ff;
 }
+
+/* ==========================================================
+ * v2.0.0 新增样式
+ * ========================================================== */
+
+/* ========== 通用 toast（ZMPUtils.showToast） ========== */
+#zmp-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 64px;
+  transform: translateX(-50%);
+  z-index: 1000000;
+  padding: 10px 18px;
+  background: rgba(20, 22, 28, 0.92);
+  color: #fff;
+  font-size: 13px;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  animation: zmp-toast-in 0.3s ease;
+  max-width: 80vw;
+  pointer-events: none;
+}
+
+/* ========== A1 回答聚合侧栏 ========== */
+.zmp-aggregate-panel {
+  position: fixed;
+  top: 72px;
+  right: 16px;
+  width: 300px;
+  max-height: calc(100vh - 180px);
+  background: #fff;
+  border: 1px solid #e6e8eb;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  z-index: 99900;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.zmp-aggregate-panel.zmp-agg-hidden {
+  display: none;
+}
+.zmp-agg-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f2f5;
+  flex-shrink: 0;
+}
+.zmp-agg-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  flex: 1;
+}
+.zmp-agg-sorts {
+  display: flex;
+  gap: 4px;
+}
+.zmp-agg-sorts button {
+  font-size: 11px;
+  padding: 2px 8px;
+  background: none;
+  border: 1px solid #dcdfe4;
+  border-radius: 10px;
+  color: #8590a6;
+  cursor: pointer;
+}
+.zmp-agg-sorts button.active {
+  background: #eef4ff;
+  border-color: #58a6ff;
+  color: #2b6fd6;
+}
+.zmp-agg-close {
+  cursor: pointer;
+  color: #999;
+  font-size: 13px;
+  padding: 0 2px;
+}
+.zmp-agg-close:hover { color: #333; }
+.zmp-agg-list {
+  overflow-y: auto;
+  flex: 1;
+}
+.zmp-agg-item {
+  display: flex;
+  gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid #f5f6f7;
+  cursor: pointer;
+  align-items: flex-start;
+}
+.zmp-agg-item:hover { background: #f8f9fa; }
+.zmp-agg-vote {
+  flex-shrink: 0;
+  min-width: 38px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #f0913b;
+  background: #fdf3e7;
+  border-radius: 4px;
+  padding: 3px 2px;
+  margin-top: 2px;
+}
+.zmp-agg-main {
+  flex: 1;
+  min-width: 0;
+}
+.zmp-agg-author {
+  font-size: 12px;
+  color: #1a1a1a;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.zmp-agg-excerpt {
+  font-size: 12px;
+  color: #8590a6;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.zmp-agg-copy {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: #c0c4cc;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+.zmp-agg-copy:hover { color: #58a6ff; background: #eef4ff; }
+
+/* ========== A2 TTS 听书控制条 ========== */
+#zmp-tts-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(20, 22, 28, 0.94);
+  border-radius: 24px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  z-index: 1000000;
+}
+#zmp-tts-bar button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#zmp-tts-bar button:hover { background: rgba(255, 255, 255, 0.25); }
+#zmp-tts-bar .zmp-tts-rate {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 4px 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+#zmp-tts-bar .zmp-tts-rate option { color: #333; }
+#zmp-tts-bar .zmp-tts-progress {
+  color: #c8cdd6;
+  font-size: 12px;
+  min-width: 52px;
+  text-align: center;
+}
+/* 当前朗读段落高亮 */
+.zmp-tts-active {
+  background: #fff8e1 !important;
+  box-shadow: -8px 0 0 0 #fff8e1, 8px 0 0 0 #fff8e1;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+body.zmp-night-mode .zmp-tts-active {
+  background: rgba(88, 166, 255, 0.14) !important;
+  box-shadow: -8px 0 0 0 rgba(88, 166, 255, 0.14), 8px 0 0 0 rgba(88, 166, 255, 0.14);
+}
+
+/* ========== A3 划词工具条 ========== */
+#zmp-sel-toolbar {
+  position: fixed;
+  display: none;
+  gap: 2px;
+  padding: 4px;
+  background: rgba(20, 22, 28, 0.94);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 1000000;
+}
+#zmp-sel-toolbar button {
+  border: none;
+  background: none;
+  color: #d8dce3;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#zmp-sel-toolbar button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+/* ========== B1 AI 总结 ========== */
+.zmp-ai-btn {
+  font-size: 12px;
+  padding: 3px 10px;
+  background: #f0f7ff;
+  border: 1px solid #b6d4f5;
+  border-radius: 4px;
+  color: #2b6fd6;
+  cursor: pointer;
+}
+.zmp-ai-btn:hover { background: #e0efff; }
+#zmp-ai-confirm {
+  position: fixed;
+  width: 300px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  z-index: 1000000;
+}
+.zmp-ai-confirm-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.zmp-ai-confirm-meta {
+  font-size: 12px;
+  color: #8590a6;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+.zmp-ai-confirm-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.zmp-ai-confirm-btns button {
+  font-size: 12px;
+  padding: 5px 14px;
+  border-radius: 4px;
+  border: 1px solid #dcdfe4;
+  background: #fff;
+  color: #8590a6;
+  cursor: pointer;
+}
+.zmp-ai-confirm-btns button.primary {
+  background: #2b6fd6;
+  border-color: #2b6fd6;
+  color: #fff;
+}
+.zmp-ai-card {
+  display: none;
+  margin: 10px 0;
+  padding: 14px 16px;
+  background: #f7f9fc;
+  border: 1px solid #e4e9f0;
+  border-left: 3px solid #58a6ff;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #333;
+}
+.zmp-ai-card .zmp-ai-md-h {
+  display: block;
+  font-size: 14px;
+  margin: 8px 0 4px;
+}
+.zmp-ai-card .zmp-ai-md-li {
+  padding-left: 6px;
+}
+.zmp-ai-card .zmp-ai-md-code {
+  background: #eef1f5;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 12px;
+  overflow-x: auto;
+  margin: 6px 0;
+}
+.zmp-ai-card code {
+  background: #eef1f5;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 12px;
+}
+.zmp-ai-cached {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #b0b6bf;
+  text-align: right;
+}
+
+/* ========== B3 一句话提炼条 ========== */
+.zmp-digest-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 7px 12px;
+  margin: 8px 0 4px;
+  background: #f7f9fc;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.zmp-digest-label {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: #8590a6;
+  font-size: 12px;
+}
+.zmp-digest-tag {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 9px;
+  font-weight: 600;
+}
+.zmp-digest-tag.zmp-digest-ad {
+  color: #c0392b;
+  background: #fdecea;
+}
+.zmp-digest-tag.zmp-digest-emotion {
+  color: #b07d1e;
+  background: #fdf3e0;
+}
+.zmp-digest-tag.zmp-digest-knowledge {
+  color: #1e7e4a;
+  background: #e6f6ee;
+}
+.zmp-digest-tag.zmp-digest-opinion {
+  color: #2b6fd6;
+  background: #eef4ff;
+}
+.zmp-digest-text {
+  color: #444;
+  flex: 1;
+  min-width: 200px;
+}
+
+/* ========== B4 本地收藏夹按钮 ========== */
+.zmp-collect-btn {
+  font-size: 12px;
+  padding: 3px 10px;
+  background: #fffaf0;
+  border: 1px solid #ecd9b0;
+  border-radius: 4px;
+  color: #b07d1e;
+  cursor: pointer;
+}
+.zmp-collect-btn:hover { background: #fdf3dc; }
+.zmp-collect-btn.collected {
+  background: #fff4e3;
+  border-color: #f0913b;
+  color: #f0913b;
+}
+
+/* ========== C2 直达问题 / 提问者 ========== */
+.zmp-direct-q {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  font-size: 11px;
+  vertical-align: middle;
+  background: #eef4ff;
+  border: 1px solid #b6d4f5;
+  border-radius: 9px;
+  color: #2b6fd6;
+  text-decoration: none;
+}
+.zmp-direct-q:hover { background: #e0efff; }
+.zmp-question-author {
+  display: inline-block;
+  margin-left: 12px;
+  font-size: 13px;
+  color: #8590a6;
+}
+
+/* ========== C5 图片悬停预览 ========== */
+.zmp-img-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  z-index: 999990;
+  cursor: zoom-out;
+  animation: zmp-img-in 0.15s ease;
+}
+.zmp-img-overlay img {
+  max-width: 90vw;
+  max-height: 88vh;
+  border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+}
+.zmp-img-caption {
+  margin-top: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+}
+@keyframes zmp-img-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ========== 夜间模式图片调暗（enhance.nightImageDim） ========== */
+body.zmp-night-mode.zmp-night-img-dim img {
+  filter: brightness(0.75) contrast(0.95);
+}
+body.zmp-night-mode.zmp-night-img-dim .zmp-img-overlay img {
+  filter: none;
+}
+
+/* ========== C4 搜索页净化（purify.cleanSearchPage） ========== */
+body.zmp-clean-search .SearchSideCards,
+body.zmp-clean-search [class*="SearchSide"] {
+  display: none !important;
+}
+
+/* ========== C10 打印优化 ========== */
+@media print {
+  /* 隐藏一切与正文无关的界面 */
+  .GlobalSideBar, .AppHeader, .CornerButtons, .OpenInAppButton,
+  .AdblockBanner, .Pc-card, .Question-sideColumn, .ContentItem-actions,
+  .Post-SideActions, .ContentItem-rightButton, .Sticky,
+  #zmp-float-btn, #zmp-float-menu, #zmp-toc-panel, #zmp-tts-bar,
+  #zmp-aggregate-panel, #zmp-sel-toolbar, #zmp-ai-confirm, #zmp-onboard-toast,
+  #zmp-toast, .zmp-img-overlay, .zmp-word-count, .zmp-digest-bar,
+  .zmp-collect-btn, .zmp-ai-btn, .zmp-ai-card, .zmp-answer-toolbar,
+  .zmp-code-copy-btn, .zmp-collapse-all-btn {
+    display: none !important;
+  }
+  /* 正文占满页宽 */
+  .Post-Main, .ContentItem-content, .Question-main, .List-item {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body {
+    background: #fff !important;
+  }
+  /* 避免段落/代码块跨页截断 */
+  p, pre, blockquote, img, .RichContent-inner {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/* ========== v2.0.0 新组件深色主题适配 ========== */
+body.zmp-bg-dark .zmp-aggregate-panel,
+body.zmp-theme-darkzen .zmp-aggregate-panel,
+body.zmp-theme-oled .zmp-aggregate-panel {
+  background: #1c1f26;
+  border-color: #30363d;
+}
+body.zmp-bg-dark .zmp-agg-header,
+body.zmp-theme-darkzen .zmp-agg-header,
+body.zmp-theme-oled .zmp-agg-header {
+  border-bottom-color: #262b33;
+}
+body.zmp-bg-dark .zmp-agg-title,
+body.zmp-theme-darkzen .zmp-agg-title,
+body.zmp-theme-oled .zmp-agg-title {
+  color: #d0d4da;
+}
+body.zmp-bg-dark .zmp-agg-item,
+body.zmp-theme-darkzen .zmp-agg-item,
+body.zmp-theme-oled .zmp-agg-item {
+  border-bottom-color: #262b33;
+}
+body.zmp-bg-dark .zmp-agg-item:hover,
+body.zmp-theme-darkzen .zmp-agg-item:hover,
+body.zmp-theme-oled .zmp-agg-item:hover {
+  background: #23272f;
+}
+body.zmp-bg-dark .zmp-agg-author,
+body.zmp-theme-darkzen .zmp-agg-author,
+body.zmp-theme-oled .zmp-agg-author {
+  color: #d0d4da;
+}
+body.zmp-bg-dark .zmp-agg-excerpt,
+body.zmp-theme-darkzen .zmp-agg-excerpt,
+body.zmp-theme-oled .zmp-agg-excerpt {
+  color: #8a919c;
+}
+body.zmp-bg-dark .zmp-ai-btn,
+body.zmp-theme-darkzen .zmp-ai-btn,
+body.zmp-theme-oled .zmp-ai-btn {
+  background: #1d2a3a;
+  border-color: #2b527f;
+  color: #7cb3ff;
+}
+body.zmp-bg-dark .zmp-collect-btn,
+body.zmp-theme-darkzen .zmp-collect-btn,
+body.zmp-theme-oled .zmp-collect-btn {
+  background: #2a2416;
+  border-color: #5c4a1e;
+  color: #d9a441;
+}
+body.zmp-bg-dark .zmp-digest-bar,
+body.zmp-theme-darkzen .zmp-digest-bar,
+body.zmp-theme-oled .zmp-digest-bar {
+  background: #1e222a;
+}
+body.zmp-bg-dark .zmp-digest-text,
+body.zmp-theme-darkzen .zmp-digest-text,
+body.zmp-theme-oled .zmp-digest-text {
+  color: #b8bec8;
+}
+body.zmp-bg-dark .zmp-ai-card,
+body.zmp-theme-darkzen .zmp-ai-card,
+body.zmp-theme-oled .zmp-ai-card {
+  background: #1e222a;
+  border-color: #30363d;
+  color: #c8cdd6;
+}
+body.zmp-bg-dark .zmp-ai-card .zmp-ai-md-code,
+body.zmp-theme-darkzen .zmp-ai-card .zmp-ai-md-code,
+body.zmp-theme-oled .zmp-ai-card .zmp-ai-md-code,
+body.zmp-bg-dark .zmp-ai-card code,
+body.zmp-theme-darkzen .zmp-ai-card code,
+body.zmp-theme-oled .zmp-ai-card code {
+  background: #262b33;
+}
+body.zmp-bg-dark #zmp-ai-confirm,
+body.zmp-theme-darkzen #zmp-ai-confirm,
+body.zmp-theme-oled #zmp-ai-confirm {
+  background: #1c1f26;
+}
+body.zmp-bg-dark .zmp-ai-confirm-title,
+body.zmp-theme-darkzen .zmp-ai-confirm-title,
+body.zmp-theme-oled .zmp-ai-confirm-title {
+  color: #d0d4da;
+}
